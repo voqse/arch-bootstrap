@@ -17,6 +17,35 @@ warn()    { echo -e "${YELLOW}[WARN]${RESET}  $*"; }
 error()   { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 die()     { error "$*"; exit 1; }
 
+# Ask for a password (hidden input), confirmed by a second prompt.
+# Usage: ask_password "Prompt" [allow_empty=false]
+# Result is stored in REPLY.
+ask_password() {
+    local prompt="$1"
+    local allow_empty="${2:-false}"
+    local password confirm
+
+    while true; do
+        read -rsp "$(echo -e "${BOLD}${prompt}: ${RESET}")" password
+        echo
+        if [[ -z "${password}" ]]; then
+            if [[ "${allow_empty}" == "true" ]]; then
+                REPLY=""
+                return 0
+            fi
+            warn "Password cannot be empty. Please try again."
+            continue
+        fi
+        read -rsp "$(echo -e "${BOLD}Confirm password: ${RESET}")" confirm
+        echo
+        if [[ "${password}" == "${confirm}" ]]; then
+            REPLY="${password}"
+            return 0
+        fi
+        warn "Passwords do not match. Please try again."
+    done
+}
+
 # Ask yes/no question; returns 0 for yes, 1 for no.
 # Usage: ask_yn "Question?" [default_yes]
 ask_yn() {

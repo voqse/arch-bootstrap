@@ -73,6 +73,25 @@ for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do
 done
 
 # ---------------------------------------------------------------------------
+# Collect user credentials (always interactive, independent of preset)
+# ---------------------------------------------------------------------------
+
+section "User credentials"
+
+ask_value "Username" "user"
+INSTALL_USERNAME="${REPLY}"
+
+ask_value "Supplementary groups" "wheel,audio,video,storage"
+INSTALL_USER_GROUPS="${REPLY}"
+
+ask_password "Password for '${INSTALL_USERNAME}'"
+INSTALL_USER_PASSWORD="${REPLY}"
+
+info "Root password — leave empty to lock the root account."
+ask_password "Root password" true
+ROOT_PASSWORD="${REPLY}"
+
+# ---------------------------------------------------------------------------
 # Run installation pipeline
 # ---------------------------------------------------------------------------
 

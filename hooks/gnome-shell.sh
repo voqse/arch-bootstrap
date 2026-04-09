@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hook: gnome-appearance
+# Hook: gnome-shell
 # Sets a solid #000000 (black) desktop background for:
 #   - All GNOME user sessions (via system-wide dconf override)
 #   - GDM login screen (via GDM dconf database)
