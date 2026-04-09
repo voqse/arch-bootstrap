@@ -23,4 +23,5 @@ chroot_initramfs
 chroot_root_password
 chroot_users
 chroot_bootloader
+chroot_services
 chroot_package_hooks
