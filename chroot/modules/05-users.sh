@@ -19,12 +19,7 @@ chroot_root_password() {
 chroot_users() {
     section "User accounts"
 
-    if [[ ${#USERS[@]} -eq 0 ]]; then
-        info "No users defined in config; skipping."
-        return
-    fi
-
-    # Ensure sudo is configured so wheel members have sudo access
+    # Ensure wheel group members can use sudo
     local sudoers_wheel="/etc/sudoers.d/wheel"
     if [[ ! -f "${sudoers_wheel}" ]]; then
         echo "%wheel ALL=(ALL:ALL) ALL" > "${sudoers_wheel}"
@@ -32,40 +27,55 @@ chroot_users() {
         info "Enabled sudo for wheel group via ${sudoers_wheel}."
     fi
 
-    for entry in "${USERS[@]}"; do
+    local created=0
+
+    # Main user — collected interactively before installation
+    if [[ -n "${INSTALL_USERNAME:-}" ]]; then
+        _create_user "${INSTALL_USERNAME}" "${INSTALL_USER_GROUPS:-}" "${INSTALL_USER_PASSWORD:-}"
+        created=$((created + 1))
+    fi
+
+    # Additional users from the USERS array (advanced preset configs)
+    for entry in "${USERS[@]+"${USERS[@]}"}"; do
+        [[ -z "${entry}" ]] && continue
         local username password groups
-        IFS=':' read -r username password groups <<< "${entry}"
-
-        if [[ -z "${username}" ]]; then
-            warn "Skipping empty user entry."
-            continue
-        fi
-
-        info "Creating user: ${username}"
-
-        local useradd_args=(-m -s /bin/bash)
-        if [[ -n "${groups}" ]]; then
-            useradd_args+=(-G "${groups}")
-        fi
-
-        if id "${username}" &>/dev/null; then
-            warn "User '${username}' already exists; skipping creation."
+        username="${entry%%:*}"
+        local rest="${entry#*:}"
+        if [[ "${rest}" == *:* ]]; then
+            groups="${rest##*:}"
+            password="${rest%:*}"
         else
-            run useradd "${useradd_args[@]}" "${username}"
+            password="${rest}"
+            groups=""
         fi
-
-        if [[ -z "${password}" ]]; then
-            warn "No password for '${username}' — account locked. Set it manually after reboot."
-            passwd -l "${username}" || true
-        elif [[ "${password}" == "?" ]]; then
-            info "Enter password for '${username}':"
-            until passwd "${username}"; do
-                warn "Password mismatch or error, please try again."
-            done
-            success "Password set for ${username}."
-        else
-            echo "${username}:${password}" | chpasswd
-            success "Password set for ${username}."
-        fi
+        _create_user "${username}" "${groups}" "${password}"
+        created=$((created + 1))
     done
+
+    if (( created == 0 )); then
+        warn "No users configured."
+    fi
+}
+
+_create_user() {
+    local username="$1" groups="$2" password="$3"
+
+    info "Creating user: ${username}"
+
+    local useradd_args=(-m -s /bin/bash)
+    [[ -n "${groups}" ]] && useradd_args+=(-G "${groups}")
+
+    if id "${username}" &>/dev/null; then
+        warn "User '${username}' already exists; skipping creation."
+    else
+        run useradd "${useradd_args[@]}" "${username}"
+    fi
+
+    if [[ -z "${password}" ]]; then
+        warn "No password for '${username}' — account locked."
+        passwd -l "${username}" || true
+    else
+        echo "${username}:${password}" | chpasswd
+        success "Password set for ${username}."
+    fi
 }

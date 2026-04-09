@@ -3,8 +3,10 @@
 Modular, config-driven Arch Linux installation script that strictly follows
 the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide).
 
-Run it from the live ISO with a single command — or customise a preset file
-and pass it with `--config` to get a fully unattended install.
+Preset files define the target machine's packages, timezone, hostname, and
+services. Credentials (username, user password, root password) are always
+collected interactively at the start of the run and are never stored in
+preset files.
 
 ---
 
@@ -21,11 +23,12 @@ curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/config/de
 # 3. Edit the preset to match your hardware and preferences
 nano my.conf
 
-# 4. Run
+# 4. Run — you will be asked for username and passwords before anything starts
 bash bootstrap.sh --config my.conf
 ```
 
-At the end of the run you will be told to unmount and reboot:
+The script will ask for credentials first, then install and configure the
+system without further interaction. When finished:
 
 ```bash
 umount -R /mnt
@@ -38,11 +41,11 @@ reboot
 
 ```
 arch-bootstrap/
-├── bootstrap.sh              # Main entry point
+├── bootstrap.sh              # Main entry point; interactive credential prompt
 ├── lib.sh                    # Shared helper functions
 │
 ├── config/
-│   ├── default.conf          # Base configuration preset (start here)
+│   ├── default.conf          # Base preset — start here for a new machine
 │   └── matebook-d16.conf     # Huawei MateBook D16 2021 (Ryzen 4600H / GNOME)
 │
 ├── modules/                  # Pre-chroot pipeline (runs on the live ISO)
@@ -55,20 +58,20 @@ arch-bootstrap/
 │
 ├── chroot/
 │   ├── configure.sh          # Chroot entry point
-│   └── modules/              # In-chroot configuration (runs inside the new system)
-│       ├── 01-timezone.sh    # Timezone + NTP
+│   └── modules/              # In-chroot configuration
+│       ├── 01-timezone.sh    # Timezone + systemd-timesyncd
 │       ├── 02-localization.sh# locale.gen, locale.conf, vconsole.conf
 │       ├── 03-hostname.sh    # /etc/hostname, /etc/hosts
 │       ├── 04-initramfs.sh   # mkinitcpio
-│       ├── 05-users.sh       # Root password + user accounts + sudo
+│       ├── 05-users.sh       # Root password + user accounts + sudoers
 │       ├── 06-bootloader.sh  # GRUB (UEFI)
-│       ├── 07-hooks.sh       # Per-package post-install hooks
+│       ├── 07-hooks.sh       # Per-package configuration scripts
 │       └── 08-services.sh    # systemctl enable for SERVICES array
 │
-└── hooks/                    # Hook scripts (run in chroot, tied to packages)
-    ├── networkmanager.sh     # Enable NetworkManager (legacy)
-    ├── ufw.sh                # Configure UFW firewall rules
-    └── gnome-appearance.sh   # Set solid #000 background for GNOME + GDM
+└── hooks/                    # Per-package configuration scripts
+    ├── gnome-shell.sh        # GNOME appearance — solid black background
+    ├── networkmanager.sh     # Enable NetworkManager (legacy compatibility)
+    └── ufw.sh                # UFW rules — deny incoming, allow outgoing
 ```
 
 ---
@@ -79,109 +82,114 @@ Copy a preset and edit it:
 
 ```bash
 cp config/default.conf config/my.conf
+bash bootstrap.sh --config config/my.conf
 ```
 
 ### Localization
 
-| Variable  | Description                        | Default               |
-|-----------|------------------------------------|-----------------------|
-| `LOCALES` | Array of locales to uncomment      | `("en_US.UTF-8" "ru_RU.UTF-8")` |
-| `LANG`    | System-wide language (`LANG=`)     | `en_US.UTF-8`         |
-| `KEYMAP`  | Console keymap (vconsole.conf)     | `ruwin_alt_sh-UTF-8`  |
-| `FONT`    | Console font (vconsole.conf)       | `cyr-sun16`           |
-| `TIMEZONE`| Timezone path under /usr/share/zoneinfo | `Europe/Moscow`  |
-| `NTP_ENABLED` | Enable systemd-timesyncd on first boot | `true`        |
+| Variable      | Description                              | Default                            |
+|---------------|------------------------------------------|------------------------------------|
+| `LOCALES`     | Locales to uncomment in `locale.gen`     | `("en_US.UTF-8" "ru_RU.UTF-8")`   |
+| `LANG`        | System-wide language (`LANG=`)           | `en_US.UTF-8`                      |
+| `KEYMAP`      | Console keymap (`vconsole.conf`)         | `ruwin_alt_sh-UTF-8`               |
+| `FONT`        | Console font (`vconsole.conf`)           | `cyr-sun16`                        |
+| `TIMEZONE`    | Zoneinfo path, e.g. `Asia/Tomsk`         | `Europe/Moscow`                    |
+| `NTP_ENABLED` | Enable `systemd-timesyncd` on first boot | `true`                             |
 
 ### Disk
 
-| Variable    | Description                                      | Default |
-|-------------|--------------------------------------------------|---------|
-| `DISK`      | Device path, e.g. `/dev/nvme0n1`. Empty = prompt | `""`    |
-| `USE_SWAP`  | Create a swap partition                          | `true`  |
-| `SWAP_SIZE` | Swap size, e.g. `16G` or `4096M`                | `16G`   |
+| Variable    | Description                                        | Default |
+|-------------|----------------------------------------------------|---------|
+| `DISK`      | Device path, e.g. `/dev/nvme0n1`. Empty = prompt   | `""`    |
+| `USE_SWAP`  | Create a swap partition                            | `true`  |
+| `SWAP_SIZE` | Swap size, e.g. `16G` or `4096M`                  | `16G`   |
 
-Partition layout (GPT / UEFI, always):
+Partition layout (GPT / UEFI only):
 
-| # | Size        | Type                  | Filesystem |
-|---|-------------|-----------------------|------------|
-| 1 | 512 MiB     | EFI System Partition  | FAT32      |
-| 2 | `SWAP_SIZE` | Linux swap            | swap       |
-| 3 | remainder   | Linux filesystem      | ext4       |
+| # | Size        | Type                 | Filesystem |
+|---|-------------|----------------------|------------|
+| 1 | 512 MiB     | EFI System Partition | FAT32      |
+| 2 | `SWAP_SIZE` | Linux swap           | swap       |
+| 3 | remainder   | Linux filesystem     | ext4       |
 
 Swap is omitted when `USE_SWAP=false`.
 
 ### System identity
 
-| Variable        | Description             | Default      |
-|-----------------|-------------------------|--------------|
-| `HOSTNAME`      | Machine hostname        | `archlinux`  |
-| `USERS`         | Array of user entries   | see below    |
-| `ROOT_PASSWORD` | Root password; empty = lock root | `""` |
+| Variable   | Description      | Default      |
+|------------|------------------|--------------|
+| `HOSTNAME` | Machine hostname | `archlinux`  |
 
-**User entry format:** `"username:password:groups"`
-
-- `password` can be a literal password, empty (locks the account), or `?` to
-  be prompted interactively during installation.
-- `groups` is a comma-separated list of supplementary groups.
-
-```bash
-USERS=(
-    "alice:?:wheel,audio,video,storage"   # prompted at install time
-    "bob:s3cr3t:audio"                    # set directly in config
-)
-```
-
-### Mirrors
-
-| Variable         | Description                                   | Default    |
-|------------------|-----------------------------------------------|------------|
-| `MIRROR_COUNTRY` | Country name passed to reflector              | `Russia`   |
-| `MIRRORS`        | Explicit mirror URLs (overrides reflector)    | `()`       |
+> **Credentials are not in preset files.**
+> Username, user password, and root password are asked interactively at
+> the very beginning of the installation run.
 
 ### Packages
 
 ```bash
-BASE_PACKAGES=(          # Passed to pacstrap first; always installed
+BASE_PACKAGES=(       # Passed to pacstrap first; always installed
     "base"
     "linux"
-    ...
+    "linux-firmware"
+    "amd-ucode"       # add for AMD CPUs
 )
 
-PACKAGES=(               # Additional packages; may carry a hook
-    "networkmanager"            # plain — no hook
-    "ufw:ufw"                   # "ufw" package → runs hooks/ufw.sh
-    "gnome-shell:gnome-appearance"
+PACKAGES=(            # Additional packages; optionally with a config hook
+    "networkmanager"              # plain — no hook
+    "ufw:ufw"                     # explicit hook → runs hooks/ufw.sh
+    "gnome-shell"                 # auto hook  → runs hooks/gnome-shell.sh
 )
 
-BOOTLOADER_PACKAGES=(    # Bootloader and related tools
+BOOTLOADER_PACKAGES=( # Bootloader-related packages
     "grub"
     "efibootmgr"
 )
 ```
 
-### Bootloader (GRUB)
+#### Per-package configuration scripts
 
-| Variable                | Description                                           | Default  |
-|-------------------------|-------------------------------------------------------|----------|
-| `BOOTLOADER`            | Bootloader type (only `grub` supported)               | `grub`   |
-| `GRUB_BOOTLOADER_ID`    | Label in the EFI firmware boot menu                  | `GRUB`   |
-| `GRUB_TIMEOUT`          | Seconds to wait before auto-boot (`0` = immediate)   | `5`      |
-| `GRUB_TIMEOUT_STYLE`    | `menu` \| `countdown` \| `hidden`                    | `menu`   |
-| `GRUB_DISABLE_OS_PROBER`| `true` = single-OS mode, no multi-boot scan           | `false`  |
+Any package entry can carry a configuration script from the `hooks/`
+directory. Two ways to attach one:
 
-Example — silent single-OS boot, EFI entry named "Linux Boot Manager":
+1. **Auto-detection** — create `hooks/<package-name>.sh`. It runs
+   automatically whenever that package appears in `PACKAGES`.
+2. **Explicit name** — use `"package:hook-name"` syntax to run
+   `hooks/<hook-name>.sh`.
 
 ```bash
-GRUB_BOOTLOADER_ID="Linux Boot Manager"
-GRUB_TIMEOUT=0
-GRUB_TIMEOUT_STYLE="hidden"
-GRUB_DISABLE_OS_PROBER=true
+# hooks/gnome-shell.sh — runs automatically after gnome-shell is installed
+dconf update          # apply pre-written dconf overrides
+
+# hooks/ufw.sh — called via explicit "ufw:ufw"
+ufw default deny incoming
+ufw default allow outgoing
+ufw --force enable
+```
+
+Scripts execute inside `arch-chroot` after all packages have been installed,
+so full system tools (dconf, systemctl, etc.) are available.
+
+### Bootloader (GRUB)
+
+| Variable                 | Description                                         | Default               |
+|--------------------------|-----------------------------------------------------|-----------------------|
+| `BOOTLOADER`             | Bootloader type (only `grub` supported)             | `grub`                |
+| `GRUB_BOOTLOADER_ID`     | EFI firmware boot-menu label                        | `Linux Boot Manager`  |
+| `GRUB_TIMEOUT`           | Seconds before auto-boot (`0` = immediate)          | `0`                   |
+| `GRUB_TIMEOUT_STYLE`     | `menu` \| `countdown` \| `hidden`                  | `hidden`              |
+| `GRUB_DISABLE_OS_PROBER` | `true` = single-entry config, skip multi-boot probe | `true`                |
+
+The defaults produce a silent, instant single-OS boot. Override to show a
+menu (e.g. for dual-boot):
+
+```bash
+GRUB_TIMEOUT=5
+GRUB_TIMEOUT_STYLE="menu"
+GRUB_DISABLE_OS_PROBER=false
+BOOTLOADER_PACKAGES=("grub" "efibootmgr" "os-prober")
 ```
 
 ### Services
-
-`SERVICES` is an array of systemd unit names that will be enabled inside the
-chroot via `systemctl enable`:
 
 ```bash
 SERVICES=(
@@ -193,27 +201,7 @@ SERVICES=(
 )
 ```
 
-### Per-package post-install hooks
-
-Append `:hook_name` to a package entry; the matching `hooks/<hook_name>.sh`
-is executed inside the chroot after all packages are installed:
-
-```bash
-PACKAGES=(
-    "ufw:ufw"                       # runs hooks/ufw.sh
-    "gnome-shell:gnome-appearance"  # runs hooks/gnome-appearance.sh
-)
-```
-
-Create the hook script:
-
-```bash
-#!/usr/bin/env bash
-# hooks/ufw.sh
-ufw default deny incoming
-ufw default allow outgoing
-ufw --force enable
-```
+Each entry is passed verbatim to `systemctl enable` inside the chroot.
 
 ---
 
@@ -221,23 +209,29 @@ ufw --force enable
 
 ### `config/default.conf`
 
-Minimal base preset with sensible defaults. Start here for a new machine.
+Minimal base preset. Contains only what is needed for a functional system.
+All GRUB, NTP, and mirror settings are already at sensible defaults — you
+only need to override what differs for your machine.
 
 ### `config/matebook-d16.conf`
 
-Ready-to-use preset for the **Huawei MateBook D16 2021** (AMD Ryzen 5 4600H,
-integrated Radeon Vega 6):
+Ready-to-use preset for the **Huawei MateBook D16 2021**
+(AMD Ryzen 5 4600H, integrated Radeon Vega 6):
 
-- GNOME desktop with Wayland / GDM
-- PipeWire audio stack
-- AMD open-source graphics (Mesa, vulkan-radeon, VA-API)
-- NetworkManager + BlueZ
-- UFW firewall (deny in / allow out)
-- Solid black (#000000) background for desktop and login screen
-- GRUB boots silently with no menu (EFI entry: "Linux Boot Manager")
-- `fstrim.timer` for SSD health
-- `fwupd` for firmware updates
-- Timezone: Asia/Tomsk
+| Setting | Value |
+|---------|-------|
+| Timezone | Asia/Tomsk |
+| Hostname | matebook |
+| Desktop | GNOME (Wayland / GDM) |
+| Audio | PipeWire |
+| GPU | Mesa + vulkan-radeon + libva-mesa-driver |
+| Network | NetworkManager |
+| Bluetooth | BlueZ |
+| Firewall | UFW (deny in / allow out) |
+| Background | Solid black `#000000` (desktop + GDM) |
+| GRUB | Silent boot, EFI label "Linux Boot Manager" |
+| SSD | `fstrim.timer` enabled |
+| Firmware | `fwupd` + `fwupd-refresh.timer` |
 
 ```bash
 bash bootstrap.sh --config config/matebook-d16.conf
@@ -249,17 +243,18 @@ bash bootstrap.sh --config config/matebook-d16.conf
 
 | Step | Module | Description |
 |------|--------|-------------|
+| 0 | bootstrap.sh | Ask username, user password, root password |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
-| 3 | `03-mirrors` | Rank mirrors with reflector or use explicit list |
+| 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
 | 4 | `04-pacstrap` | `pacstrap -K /mnt <all packages>` |
 | 5 | `05-fstab` | `genfstab -U /mnt >> /mnt/etc/fstab` |
-| 6 | `06-chroot` | Copies scripts + serialised config, runs `arch-chroot` |
+| 6 | `06-chroot` | Copy scripts + serialised config, run `arch-chroot` |
 | — | (chroot) timezone | `/etc/localtime`, `hwclock`, enable timesyncd |
 | — | (chroot) localization | `locale-gen`, `locale.conf`, `vconsole.conf` |
 | — | (chroot) hostname | `/etc/hostname`, `/etc/hosts` |
 | — | (chroot) initramfs | `mkinitcpio -P` |
-| — | (chroot) users | Root password, user accounts, `/etc/sudoers.d/wheel` |
+| — | (chroot) users | Root password, user account, `/etc/sudoers.d/wheel` |
 | — | (chroot) bootloader | GRUB install + `grub-mkconfig` |
 | — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
-| — | (chroot) hooks | Per-package hook scripts |
+| — | (chroot) hooks | Per-package configuration scripts from `hooks/` |
