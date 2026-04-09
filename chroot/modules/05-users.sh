@@ -57,6 +57,12 @@ chroot_users() {
         if [[ -z "${password}" ]]; then
             warn "No password for '${username}' — account locked. Set it manually after reboot."
             passwd -l "${username}" || true
+        elif [[ "${password}" == "?" ]]; then
+            info "Enter password for '${username}':"
+            until passwd "${username}"; do
+                warn "Password mismatch or error, please try again."
+            done
+            success "Password set for ${username}."
         else
             echo "${username}:${password}" | chpasswd
             success "Password set for ${username}."

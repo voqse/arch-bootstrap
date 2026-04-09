@@ -35,16 +35,22 @@ _export_config() {
     cat <<EOF
 #!/usr/bin/env bash
 # Auto-generated config — do not edit manually.
-LOCALES=($(printf '"%s" ' "${LOCALES[@]}"))
+LOCALES=($(printf '"%s" ' "${LOCALES[@]+"${LOCALES[@]}"}"))
 LANG="${LANG}"
 KEYMAP="${KEYMAP}"
 FONT="${FONT}"
 TIMEZONE="${TIMEZONE}"
+NTP_ENABLED="${NTP_ENABLED:-true}"
 HOSTNAME="${HOSTNAME}"
 ROOT_PASSWORD="${ROOT_PASSWORD}"
-USERS=($(printf '"%s" ' "${USERS[@]}"))
+USERS=($(printf '"%s" ' "${USERS[@]+"${USERS[@]}"}"))
 BOOTLOADER="${BOOTLOADER}"
-PACKAGES=($(printf '"%s" ' "${PACKAGES[@]}"))
+GRUB_BOOTLOADER_ID="${GRUB_BOOTLOADER_ID:-GRUB}"
+GRUB_TIMEOUT="${GRUB_TIMEOUT:-5}"
+GRUB_TIMEOUT_STYLE="${GRUB_TIMEOUT_STYLE:-menu}"
+GRUB_DISABLE_OS_PROBER="${GRUB_DISABLE_OS_PROBER:-false}"
+PACKAGES=($(printf '"%s" ' "${PACKAGES[@]+"${PACKAGES[@]}"}"))
+SERVICES=($(printf '"%s" ' "${SERVICES[@]+"${SERVICES[@]}"}"))
 EFI_PART="${EFI_PART:-}"
 ROOT_PART="${ROOT_PART:-}"
 SWAP_PART="${SWAP_PART:-}"
