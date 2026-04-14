@@ -154,6 +154,22 @@ while true; do
     warn "Unknown timezone '${REPLY}'. Check /usr/share/zoneinfo/ for valid entries."
 done
 
+# Swap type and size
+while true; do
+    ask_value "Swap type [(f)ile, (p)artition, (n)one]" "${SWAP_TYPE:-f}"
+    case "${REPLY,,}" in
+        f|file)      SWAP_TYPE="file";      break ;;
+        p|partition) SWAP_TYPE="partition"; break ;;
+        n|none)      SWAP_TYPE="none";      break ;;
+        *) warn "Invalid selection. Enter: f (file), p (partition), or n (none)." ;;
+    esac
+done
+
+if [[ "${SWAP_TYPE}" != "none" ]]; then
+    ask_value "Swap size" "${SWAP_SIZE:-16G}"
+    SWAP_SIZE="${REPLY}"
+fi
+
 # ---------------------------------------------------------------------------
 # Run installation pipeline
 # ---------------------------------------------------------------------------
