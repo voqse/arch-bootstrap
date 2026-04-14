@@ -8,7 +8,7 @@
 module_mirrors() {
     section "Mirror selection"
 
-    if [[ ${#MIRRORS[@]} -gt 0 ]]; then
+    if declare -p MIRRORS &>/dev/null && [[ ${#MIRRORS[@]} -gt 0 ]]; then
         info "Applying mirrors from config..."
         printf 'Server = %s\n' "${MIRRORS[@]}" > /etc/pacman.d/mirrorlist
         success "Mirrorlist updated from config."

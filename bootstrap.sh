@@ -74,13 +74,21 @@ source "${SCRIPT_DIR}/lib.sh"
 
 require_root
 
+_DEFAULT_CONF="${SCRIPT_DIR}/config/default.conf"
+
 if [[ ! -f "${CONFIG_FILE}" ]]; then
     die "Config file not found: ${CONFIG_FILE}"
 fi
 
-info "Loading config: ${CONFIG_FILE}"
-# shellcheck source=/dev/null
-source "${CONFIG_FILE}"
+# Always source defaults first so preset files only need to override what they change.
+# shellcheck source=config/default.conf
+source "${_DEFAULT_CONF}"
+
+if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
+    info "Loading preset: ${CONFIG_FILE}"
+    # shellcheck source=/dev/null
+    source "${CONFIG_FILE}"
+fi
 
 # Load all pre-chroot modules in alphabetical order
 for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do

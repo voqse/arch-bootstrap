@@ -55,7 +55,7 @@ EOF
         local swap_offset
         # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
         swap_offset=$(filefrag -v "${SWAP_FILE}" 2>/dev/null \
-            | awk '/^ *0:/ { gsub(/\./, "", $4); print $4; exit }')
+            | awk '/^ *0:/ { sub(/:$/, "", $4); split($4, blocks, /\.\./); print blocks[1]; exit }')
         if [[ -n "${swap_offset}" ]]; then
             cmdline+=" resume=UUID=${root_uuid} resume_offset=${swap_offset}"
         fi
