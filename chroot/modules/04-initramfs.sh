@@ -8,6 +8,16 @@
 
 chroot_initramfs() {
     section "Initramfs"
+
+    # Insert the 'plymouth' hook after the 'systemd' hook when plymouth is installed.
+    # The hook must be placed after 'systemd' per the wiki recommendation.
+    # Ref: https://wiki.archlinux.org/title/Plymouth#mkinitcpio
+    if _has_package "plymouth"; then
+        info "Adding plymouth hook to mkinitcpio..."
+        # Idempotent: only insert 'plymouth' after 'systemd' if 'plymouth' is not already on the HOOKS line.
+        sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<systemd\>/systemd plymouth/; }' /etc/mkinitcpio.conf
+    fi
+
     run mkinitcpio -P
     success "Initramfs images created."
 }
