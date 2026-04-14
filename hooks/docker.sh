@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Hook: docker
-# Adds the install user to the docker group for rootless CLI access.
+# Adds the install user to the docker group for non-root access to the Docker
+# daemon via the docker group.
+# Security note: membership in the docker group grants access to the
+# root-owned Docker socket and is effectively root-equivalent.
 # Ref: https://wiki.archlinux.org/title/Docker#Installation
 
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
