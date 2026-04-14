@@ -113,8 +113,7 @@ _has_package() {
     local name="$1" entry pkg
     for entry in \
         "${PACKAGES[@]+"${PACKAGES[@]}"}" \
-        "${BASE_PACKAGES[@]+"${BASE_PACKAGES[@]}"}" \
-        "${BOOTLOADER_PACKAGES[@]+"${BOOTLOADER_PACKAGES[@]}"}"; do
+        "${BASE_PACKAGES[@]+"${BASE_PACKAGES[@]}"}"; do
         pkg="${entry%%:*}"
         [[ "${pkg}" == "${name}" ]] && return 0
     done
