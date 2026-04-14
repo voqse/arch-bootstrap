@@ -32,6 +32,7 @@ fi
 # Argument parsing
 # ---------------------------------------------------------------------------
 CONFIG_FILE="${SCRIPT_DIR}/config/default.conf"
+_PRESET_NAME=""
 
 _usage() {
     cat <<EOF
@@ -40,14 +41,23 @@ Usage: ${0##*/} [OPTIONS]
 Modular Arch Linux installation script.
 
 Options:
+  --preset NAME   Name of a built-in preset from config/<NAME>.conf.
+                  Works when running via "bash <(curl ...)" — the repo is
+                  cloned automatically and the preset is resolved from it.
   --config FILE   Path to a configuration preset file.
                   (default: config/default.conf next to this script)
   --help          Show this help message and exit.
+
+Only one of --preset or --config may be specified at a time.
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --preset)
+            _PRESET_NAME="${2:?--preset requires a preset name}"
+            shift 2
+            ;;
         --config)
             CONFIG_FILE="${2:?--config requires a file path}"
             shift 2
@@ -63,6 +73,16 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ -n "${_PRESET_NAME}" && "${CONFIG_FILE}" != "${SCRIPT_DIR}/config/default.conf" ]]; then
+    echo "--preset and --config are mutually exclusive." >&2
+    _usage
+    exit 1
+fi
+
+if [[ -n "${_PRESET_NAME}" ]]; then
+    CONFIG_FILE="${SCRIPT_DIR}/config/${_PRESET_NAME}.conf"
+fi
 
 # ---------------------------------------------------------------------------
 # Bootstrap
