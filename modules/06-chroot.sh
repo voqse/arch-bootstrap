@@ -82,6 +82,12 @@ _export_config() {
     printf 'DISK=%q\n'       "${DISK:-}"
     printf 'HIBERNATE_DELAY=%q\n' "${HIBERNATE_DELAY:-}"
 
+    if declare -p KERNEL_PARAMS >/dev/null 2>&1; then
+        declare -p KERNEL_PARAMS
+    else
+        printf '%s\n' 'declare -a KERNEL_PARAMS=()'
+    fi
+
     if declare -p YAY_PACKAGES >/dev/null 2>&1; then
         declare -p YAY_PACKAGES
     else
