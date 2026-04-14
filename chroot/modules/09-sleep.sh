@@ -20,13 +20,13 @@ HibernateDelaySec=${HIBERNATE_DELAY}
 EOF
     success "HibernateDelaySec=${HIBERNATE_DELAY} written to sleep.conf.d."
 
-    # -- logind: use suspend-then-hibernate for lid-close and power key ------
+    # -- logind: battery → suspend-then-hibernate; AC power → screen lock only
     mkdir -p /etc/systemd/logind.conf.d
     cat > /etc/systemd/logind.conf.d/hibernate.conf <<EOF
 [Login]
 HandleSuspendKey=suspend-then-hibernate
 HandleLidSwitch=suspend-then-hibernate
-HandleLidSwitchExternalPower=suspend-then-hibernate
+HandleLidSwitchExternalPower=lock
 EOF
-    success "logind configured to use suspend-then-hibernate."
+    success "logind configured: battery=suspend-then-hibernate, AC=lock (screen off)."
 }

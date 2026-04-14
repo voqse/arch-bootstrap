@@ -56,3 +56,25 @@ EOF
 # 3. Compile dconf databases
 # ---------------------------------------------------------------------------
 dconf update
+
+# ---------------------------------------------------------------------------
+# 4. Hide noisy utility entries from the app menu
+# ---------------------------------------------------------------------------
+# Create minimal override .desktop files that set NoDisplay=true so that
+# avahi browser tools and V4L utilities do not appear in GNOME Shell search
+# or the application grid.
+mkdir -p /usr/local/share/applications
+
+for _entry in \
+    avahi-bssh.desktop \
+    avahi-bvnc.desktop \
+    avahi-discover.desktop \
+    qv4l2.desktop \
+    qvidcap.desktop
+do
+    cat > "/usr/local/share/applications/${_entry}" <<EOF
+[Desktop Entry]
+NoDisplay=true
+EOF
+done
+unset _entry
