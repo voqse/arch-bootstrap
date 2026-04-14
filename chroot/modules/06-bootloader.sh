@@ -103,7 +103,10 @@ _install_grub() {
     fi
     if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
         for _param in "${KERNEL_PARAMS[@]}"; do
-            sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/{/${_param//./\\.}/!s/\"$/ ${_param}\"/}" "${grub_default}"
+            # Use grep -F (fixed string) to check; append to end of quoted value if absent.
+            if ! grep -qF "${_param}" "${grub_default}"; then
+                sed -i "s/\"$/ ${_param}\"/" "${grub_default}"
+            fi
         done
         info "GRUB: appended KERNEL_PARAMS to GRUB_CMDLINE_LINUX_DEFAULT"
         unset _param
