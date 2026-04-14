@@ -30,10 +30,10 @@ The script clones the repo automatically and uses the defaults from
 Pass `--preset <name>` to use one of the ready-made presets from `config/`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook-d16
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook
 ```
 
-The repo is cloned into `/tmp/arch-bootstrap` and `config/matebook-d16.conf`
+The repo is cloned into `/tmp/arch-bootstrap` and `config/matebook.conf`
 is used automatically — no manual file management needed.
 
 ### Scenario 3 — local clone, custom config
@@ -76,7 +76,8 @@ arch-bootstrap/
 │
 ├── config/
 │   ├── default.conf          # Base preset — start here for a new machine
-│   └── matebook-d16.conf     # Huawei MateBook D16 2021 (Ryzen 4600H / GNOME)
+│   ├── matebook.conf         # Huawei MateBook D16 2021 (Ryzen 4600H / GNOME)
+│   └── station.conf          # Desktop workstation (Ryzen 5800X3D / RTX 4070 Ti / GNOME)
 │
 ├── modules/                  # Pre-chroot pipeline (runs on the live ISO)
 │   ├── 01-pre-checks.sh      # Verify UEFI, internet, NTP
@@ -101,6 +102,7 @@ arch-bootstrap/
 └── hooks/                    # Per-package configuration scripts
     ├── gnome-shell.sh        # GNOME appearance — solid black background
     ├── networkmanager.sh     # Enable NetworkManager (legacy compatibility)
+    ├── nvidia-open.sh        # NVIDIA early KMS — adds modules to mkinitcpio
     └── ufw.sh                # UFW rules — deny incoming, allow outgoing
 ```
 
@@ -216,6 +218,7 @@ so full system tools (dconf, systemctl, etc.) are available.
 |--------------------------|-----------------------------------------------------|-----------------------|
 | `BOOTLOADER`             | Bootloader type: `systemd-boot` (default) or `grub` | `systemd-boot`        |
 | `EFI_MOUNTPOINT`         | Where the ESP is mounted                            | `/boot`               |
+| `KERNEL_PARAMS`          | Extra kernel command-line parameters                | `()`                  |
 
 **systemd-boot** (default) — silent instant boot, microcode auto-detected,
 swapfile resume offset written to the boot entry automatically.
@@ -225,6 +228,13 @@ To use **GRUB** instead (e.g. for dual-boot):
 ```bash
 BOOTLOADER="grub"
 BOOTLOADER_PACKAGES=("grub" "efibootmgr")        # add "os-prober" for multi-boot
+```
+
+Extra kernel parameters are appended to the boot entry by the bootloader module.
+Use `+=` in preset files to extend without overwriting defaults:
+
+```bash
+KERNEL_PARAMS+=("nvidia_drm.modeset=1" "nvidia_drm.fbdev=1")
 ```
 
 ### Services
@@ -255,14 +265,13 @@ Minimal base preset. Contains only what is needed for a functional system.
 All NTP, mirror, and bootloader settings are already at sensible defaults — you
 only need to override what differs for your machine.
 
-### `config/matebook-d16.conf`
+### `config/matebook.conf`
 
 Ready-to-use preset for the **Huawei MateBook D16 2021**
 (AMD Ryzen 5 4600H, integrated Radeon Vega 6):
 
 | Setting | Value |
 |---------|-------|
-| Timezone | Asia/Tomsk |
 | Hostname | matebook |
 | Desktop | GNOME (Wayland / GDM) |
 | Audio | PipeWire |
@@ -277,10 +286,39 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 
 ```bash
 # from the internet
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook-d16
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook
 
 # or from a local clone
-bash bootstrap.sh --preset matebook-d16
+bash bootstrap.sh --preset matebook
+```
+
+### `config/station.conf`
+
+Ready-to-use preset for a **desktop workstation**
+(Gigabyte B550 AORUS Elite V2, AMD Ryzen 7 5800X3D, Nvidia RTX 4070 Ti):
+
+| Setting | Value |
+|---------|-------|
+| Hostname | station |
+| Desktop | GNOME (Wayland / GDM) |
+| Audio | PipeWire |
+| GPU | nvidia-open (open kernel modules) + early KMS |
+| Kernel params | `nvidia_drm.modeset=1 nvidia_drm.fbdev=1` |
+| Network | NetworkManager + iwd |
+| Wi-Fi/BT | ASUS PCE-AXE59BT (MediaTek MT7922, in-kernel driver) |
+| Bluetooth | BlueZ |
+| Firewall | UFW (deny in / allow out) |
+| Background | Solid black `#000000` (desktop + GDM) |
+| Boot | systemd-boot (default) — silent instant boot |
+| SSD | `fstrim.timer` enabled |
+| Firmware | `fwupd` + `fwupd-refresh.timer` |
+
+```bash
+# from the internet
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset station
+
+# or from a local clone
+bash bootstrap.sh --preset station
 ```
 
 ---

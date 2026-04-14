@@ -63,6 +63,9 @@ EOF
             cmdline+=" resume=UUID=${root_uuid} resume_offset=${swap_offset}"
         fi
     fi
+    if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
+        cmdline+=" ${KERNEL_PARAMS[*]}"
+    fi
 
     cat > "${esp}/loader/entries/arch.conf" <<EOF
 title   Arch Linux
@@ -97,6 +100,28 @@ _install_grub() {
         # Append 'splash' to the existing cmdline only if not already present.
         sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/{/splash/!s/"$/ splash"/}' "${grub_default}"
         info "GRUB: appended 'splash' to GRUB_CMDLINE_LINUX_DEFAULT"
+    fi
+    if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
+        local _cmdline_line _cmdline_value
+        for _param in "${KERNEL_PARAMS[@]}"; do
+            # Read the current line fresh each iteration: _grub_set_value updates
+            # the file in-place, so subsequent params must see the updated value.
+            _cmdline_line="$(grep -m1 '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" 2>/dev/null || true)"
+            # Check and append only on the GRUB_CMDLINE_LINUX_DEFAULT line.
+            if ! echo "${_cmdline_line}" | grep -qF -- "${_param}"; then
+                _cmdline_value="${_cmdline_line#GRUB_CMDLINE_LINUX_DEFAULT=}"
+                _cmdline_value="${_cmdline_value#\"}"
+                _cmdline_value="${_cmdline_value%\"}"
+                if [[ -n "${_cmdline_value}" ]]; then
+                    _cmdline_value="${_cmdline_value} ${_param}"
+                else
+                    _cmdline_value="${_param}"
+                fi
+                _grub_set_value "${grub_default}" "GRUB_CMDLINE_LINUX_DEFAULT" "\"${_cmdline_value}\""
+            fi
+        done
+        info "GRUB: appended KERNEL_PARAMS to GRUB_CMDLINE_LINUX_DEFAULT"
+        unset _param _cmdline_line _cmdline_value
     fi
 
     info "Installing GRUB for UEFI (bootloader-id: Linux Boot Manager)..."
