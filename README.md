@@ -3,10 +3,10 @@
 Modular, config-driven Arch Linux installation script that strictly follows
 the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide).
 
-Preset files define the target machine's packages, timezone, hostname, and
-services. Credentials (username, user password, root password) are always
-collected interactively at the start of the run and are never stored in
-preset files.
+Preset files define the target machine's packages, hostname, and
+services. Credentials (username, user password, root password) and
+timezone are always collected interactively at the start of the run
+and are never stored in preset files.
 
 ---
 
@@ -27,8 +27,10 @@ nano my.conf
 bash bootstrap.sh --config my.conf
 ```
 
-The script will ask for credentials first, then install and configure the
-system without further interaction. When finished:
+The script will ask for credentials and timezone first, then continue
+with the installation. It may also prompt for disk selection when `DISK`
+is not set in the preset, and will always ask for confirmation before
+partitioning. When finished:
 
 ```bash
 umount -R /mnt
@@ -263,7 +265,7 @@ bash bootstrap.sh --config config/matebook-d16.conf
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
 | 4 | `04-pacstrap` | `pacstrap -K /mnt <all packages>` |
-| 5 | `05-fstab` | `genfstab -U /mnt >> /mnt/etc/fstab` |
+| 5 | `05-fstab` | `genfstab -U /mnt > /mnt/etc/fstab` |
 | 6 | `06-chroot` | Copy scripts + serialised config, run `arch-chroot` |
 | — | (chroot) timezone | `/etc/localtime`, `hwclock`, enable timesyncd |
 | — | (chroot) localization | `locale-gen`, `locale.conf`, `vconsole.conf` |
