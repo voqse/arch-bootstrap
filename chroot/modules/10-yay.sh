@@ -22,14 +22,15 @@ chroot_yay() (
 
     # Provide the user's password to sudo non-interactively via SUDO_ASKPASS,
     # so makepkg / yay can call 'sudo pacman' without a manual prompt.
+    # Use /dev/shm (tmpfs) so the files never touch disk.
     local passfile askpass
-    passfile=$(mktemp /tmp/yay-pass.XXXXXX)
-    askpass=$(mktemp /tmp/yay-askpass.XXXXXX)
+    passfile=$(mktemp /dev/shm/yay-pass.XXXXXX)
+    askpass=$(mktemp /dev/shm/yay-askpass.XXXXXX)
     printf '%s\n' "${INSTALL_USER_PASSWORD}" > "${passfile}"
     chmod 0600 "${passfile}"
     chown "${INSTALL_USERNAME}": "${passfile}"
     printf '#!/bin/sh\ncat "%s"\n' "${passfile}" > "${askpass}"
-    chmod 0755 "${askpass}"
+    chmod 0700 "${askpass}"
     chown "${INSTALL_USERNAME}": "${askpass}"
 
     # Sudoers entry: allow the user to run pacman and preserve SUDO_ASKPASS

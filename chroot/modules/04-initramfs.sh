@@ -14,6 +14,7 @@ chroot_initramfs() {
     # Ref: https://wiki.archlinux.org/title/Plymouth#mkinitcpio
     if _has_package "plymouth"; then
         info "Adding plymouth hook to mkinitcpio..."
+        # Idempotent: only insert 'plymouth' after 'systemd' if 'plymouth' is not already on the HOOKS line.
         sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<systemd\>/systemd plymouth/; }' /etc/mkinitcpio.conf
     fi
 
