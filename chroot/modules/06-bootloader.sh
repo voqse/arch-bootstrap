@@ -41,7 +41,7 @@ EOF
     local microcode_lines=""
     for uc in amd-ucode intel-ucode; do
         if [[ -f "${esp}/${uc}.img" ]]; then
-            microcode_lines+="initrd  /${uc}.img\n"
+            microcode_lines+="initrd  /${uc}.img"$'\n'
         fi
     done
 
@@ -70,7 +70,7 @@ EOF
     cat > "${esp}/loader/entries/arch.conf" <<EOF
 title   Arch Linux
 linux   /vmlinuz-linux
-$(printf '%b' "${microcode_lines}")initrd  /initramfs-linux.img
+${microcode_lines}initrd  /initramfs-linux.img
 options ${cmdline}
 EOF
 
