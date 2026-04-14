@@ -9,10 +9,16 @@
 chroot_initramfs() {
     section "Initramfs"
 
-    # Insert the plymouth hook after udev when plymouth is installed
+    # Insert the appropriate plymouth hook when plymouth is installed.
+    # Modern mkinitcpio presets use the 'systemd' hook (→ sd-plymouth);
+    # legacy presets use 'udev' (→ plymouth).
     if _has_package "plymouth"; then
         info "Adding plymouth hook to mkinitcpio..."
-        sed -i '/^HOOKS=/s/\budev\b/udev plymouth/' /etc/mkinitcpio.conf
+        if grep -qE '^HOOKS=.*\bsystemd\b' /etc/mkinitcpio.conf; then
+            sed -i '/^HOOKS=/s/\bsystemd\b/systemd sd-plymouth/' /etc/mkinitcpio.conf
+        else
+            sed -i '/^HOOKS=/s/\budev\b/udev plymouth/' /etc/mkinitcpio.conf
+        fi
     fi
 
     run mkinitcpio -P

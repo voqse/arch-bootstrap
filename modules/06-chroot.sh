@@ -61,10 +61,6 @@ _export_config() {
 
     printf 'BOOTLOADER=%q\n'              "${BOOTLOADER:-systemd-boot}"
     printf 'EFI_MOUNTPOINT=%q\n'          "${EFI_MOUNTPOINT:-/boot}"
-    printf 'GRUB_BOOTLOADER_ID=%q\n'      "${GRUB_BOOTLOADER_ID:-Linux Boot Manager}"
-    printf 'GRUB_TIMEOUT=%q\n'            "${GRUB_TIMEOUT:-0}"
-    printf 'GRUB_TIMEOUT_STYLE=%q\n'      "${GRUB_TIMEOUT_STYLE:-hidden}"
-    printf 'GRUB_DISABLE_OS_PROBER=%q\n'  "${GRUB_DISABLE_OS_PROBER:-true}"
 
     if declare -p PACKAGES >/dev/null 2>&1; then
         declare -p PACKAGES

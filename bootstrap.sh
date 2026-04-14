@@ -156,12 +156,10 @@ done
 
 # Swap type and size
 while true; do
-    ask_value "Swap type [(f)ile, (p)artition, (n)one]" "${SWAP_TYPE:-f}"
+    ask_value "Swap type (file, partition, none)" "${SWAP_TYPE:-file}"
     case "${REPLY,,}" in
-        f|file)      SWAP_TYPE="file";      break ;;
-        p|partition) SWAP_TYPE="partition"; break ;;
-        n|none)      SWAP_TYPE="none";      break ;;
-        *) warn "Invalid selection. Enter: f (file), p (partition), or n (none)." ;;
+        file|partition|none) SWAP_TYPE="${REPLY,,}"; break ;;
+        *) warn "Invalid swap type. Enter: file, partition, or none." ;;
     esac
 done
 
