@@ -15,24 +15,46 @@ chroot_yay() (
     fi
 
     require_var INSTALL_USERNAME
+    require_var INSTALL_USER_PASSWORD
 
     local build_dir="/home/${INSTALL_USERNAME}/yay"
     local sudoers_tmp="/etc/sudoers.d/yay-build"
 
-    # Grant temporary passwordless sudo for pacman (used by makepkg -s and yay)
-    echo "${INSTALL_USERNAME} ALL=(ALL) NOPASSWD: /usr/bin/pacman" > "${sudoers_tmp}"
+    # Provide the user's password to sudo non-interactively via SUDO_ASKPASS,
+    # so makepkg / yay can call 'sudo pacman' without a manual prompt.
+    local passfile askpass
+    passfile=$(mktemp /tmp/yay-pass.XXXXXX)
+    askpass=$(mktemp /tmp/yay-askpass.XXXXXX)
+    printf '%s\n' "${INSTALL_USER_PASSWORD}" > "${passfile}"
+    chmod 0600 "${passfile}"
+    chown "${INSTALL_USERNAME}": "${passfile}"
+    printf '#!/bin/sh\ncat "%s"\n' "${passfile}" > "${askpass}"
+    chmod 0755 "${askpass}"
+    chown "${INSTALL_USERNAME}": "${askpass}"
+
+    # Sudoers entry: allow the user to run pacman and preserve SUDO_ASKPASS
+    # across the sudo boundary (no NOPASSWD — password is supplied via askpass).
+    cat > "${sudoers_tmp}" <<EOF
+Defaults:${INSTALL_USERNAME} env_keep += "SUDO_ASKPASS"
+${INSTALL_USERNAME} ALL=(ALL) /usr/bin/pacman
+EOF
     chmod 0440 "${sudoers_tmp}"
-    trap 'rm -f "${sudoers_tmp}"' EXIT INT TERM HUP
+    trap 'rm -f "${sudoers_tmp}" "${passfile}" "${askpass}"' EXIT INT TERM HUP
+
+    # Remove any leftover build directory to make this step re-runnable.
+    rm -rf "${build_dir}"
 
     # Clone yay from the AUR
     info "Cloning yay from AUR..."
-    run sudo -H -u "${INSTALL_USERNAME}" git clone --depth=1 \
+    run sudo -H -u "${INSTALL_USERNAME}" \
+        git clone --depth=1 \
         https://aur.archlinux.org/yay.git "${build_dir}"
 
-    # Build and install yay
+    # Build and install yay; SUDO_ASKPASS supplies the password to internal pacman calls.
     info "Building and installing yay..."
-    run sudo -H -u "${INSTALL_USERNAME}" bash -c \
-        "cd '${build_dir}' && makepkg -si --noconfirm"
+    run sudo -H -u "${INSTALL_USERNAME}" \
+        env SUDO_ASKPASS="${askpass}" \
+        bash -c "cd '${build_dir}' && makepkg -si --noconfirm"
 
     # Remove the yay repository directory
     info "Removing yay build directory..."
@@ -44,6 +66,7 @@ chroot_yay() (
     # Install AUR packages
     info "Installing AUR packages: ${YAY_PACKAGES[*]}"
     run sudo -H -u "${INSTALL_USERNAME}" \
+        env SUDO_ASKPASS="${askpass}" \
         yay -S --noconfirm --answerdiff=None --answerclean=None \
         "${YAY_PACKAGES[@]}"
 
