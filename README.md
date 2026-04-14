@@ -87,14 +87,16 @@ bash bootstrap.sh --config config/my.conf
 
 ### Localization
 
-| Variable      | Description                              | Default                            |
-|---------------|------------------------------------------|------------------------------------|
-| `LOCALES`     | Locales to uncomment in `locale.gen`     | `("en_US.UTF-8" "ru_RU.UTF-8")`   |
-| `LANG`        | System-wide language (`LANG=`)           | `en_US.UTF-8`                      |
-| `KEYMAP`      | Console keymap (`vconsole.conf`)         | `ruwin_alt_sh-UTF-8`               |
-| `FONT`        | Console font (`vconsole.conf`)           | `cyr-sun16`                        |
-| `TIMEZONE`    | Zoneinfo path, e.g. `Asia/Tomsk`         | `Europe/Moscow`                    |
-| `NTP_ENABLED` | Enable `systemd-timesyncd` on first boot | `true`                             |
+| Variable  | Description                          | Default                          |
+|-----------|--------------------------------------|----------------------------------|
+| `LOCALES` | Locales to uncomment in `locale.gen` | `("en_US.UTF-8" "ru_RU.UTF-8")` |
+| `LANG`    | System-wide language (`LANG=`)       | `en_US.UTF-8`                    |
+| `KEYMAP`  | Console keymap (`vconsole.conf`)     | `ruwin_alt_sh-UTF-8`             |
+| `FONT`    | Console font (`vconsole.conf`)       | `cyr-sun16`                      |
+
+> **Timezone is not a preset value.**
+> It is always prompted interactively at the start of each run.
+> `systemd-timesyncd` NTP is always enabled — no config flag needed.
 
 ### Disk
 
@@ -129,8 +131,8 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials are not in preset files.**
-> Username, user password, and root password are asked interactively at
+> **Credentials and timezone are not in preset files.**
+> Username, user password, root password, and timezone are asked interactively at
 > the very beginning of the installation run.
 
 ### Packages
