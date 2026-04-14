@@ -105,7 +105,7 @@ _partition_disk() {
 }
 
 # Convert SWAP_SIZE (e.g. "16G", "4096M") to a parted-compatible end position
-# starting from 513MiB.
+# starting from 1025MiB.
 _swap_end() {
     local size="${SWAP_SIZE:-16G}"
     local num="${size%[GgMm]}"
