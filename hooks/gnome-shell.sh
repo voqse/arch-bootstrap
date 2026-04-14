@@ -66,8 +66,8 @@ dconf update
 mkdir -p /usr/local/share/applications
 
 for _entry in \
-    avahi-bssh.desktop \
-    avahi-bvnc.desktop \
+    bssh.desktop \
+    bvnc.desktop \
     avahi-discover.desktop \
     qv4l2.desktop \
     qvidcap.desktop
