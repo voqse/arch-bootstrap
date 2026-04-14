@@ -25,3 +25,4 @@ chroot_users
 chroot_bootloader
 chroot_services
 chroot_package_hooks
+chroot_sleep
