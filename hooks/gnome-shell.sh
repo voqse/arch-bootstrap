@@ -29,11 +29,13 @@ EOF
 
 cat > /etc/dconf/db/local.d/01-extensions <<'EOF'
 [org/gnome/shell]
+# Fresh-install bootstrap: no prior extensions exist, so a full assignment is safe here.
 enabled-extensions=['appindicatorsupport@rgcjonas.gmail.com']
 EOF
 
 cat > /etc/dconf/db/local.d/02-keybindings <<'EOF'
 [org/gnome/settings-daemon/plugins/media-keys]
+# Fresh-install bootstrap: no prior custom keybindings exist, so a full assignment is safe here.
 custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/']
 
 [org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
