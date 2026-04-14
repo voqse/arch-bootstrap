@@ -26,7 +26,14 @@ EOF
     success "HibernateDelaySec=${HIBERNATE_DELAY} written to sleep.conf.d."
 
     # -- mkinitcpio: add resume hook so the kernel can resume from hibernation ---
-    if grep -q '\bresume\b' /etc/mkinitcpio.conf; then
+    # With a systemd-based initramfs (systemd hook present) the resume mechanism
+    # is already built-in and no extra hook is needed.
+    # With a busybox-based initramfs the 'resume' hook must be added before
+    # 'filesystems'.
+    # Ref: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Configure_the_initramfs
+    if grep -qE '^HOOKS=.*\bsystemd\b' /etc/mkinitcpio.conf; then
+        info "mkinitcpio: systemd-based initramfs — built-in resume, no extra hook needed."
+    elif grep -q '\bresume\b' /etc/mkinitcpio.conf; then
         info "mkinitcpio: 'resume' hook already present."
     else
         # Insert 'resume' immediately before 'filesystems' in the HOOKS line.

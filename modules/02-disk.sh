@@ -4,13 +4,13 @@
 #
 # Partition layouts (GPT / UEFI):
 #   SWAP_TYPE=file | none:
-#     Part 1 — 512 MiB  EFI System Partition  (FAT32)
-#     Part 2 — remainder                       (ext4)
+#     Part 1 — 1024 MiB  EFI System Partition  (FAT32)
+#     Part 2 — remainder                        (ext4)
 #
 #   SWAP_TYPE=partition:
-#     Part 1 — 512 MiB  EFI System Partition  (FAT32)
-#     Part 2 — SWAP_SIZE Linux swap            (swap)
-#     Part 3 — remainder                       (ext4)
+#     Part 1 — 1024 MiB  EFI System Partition  (FAT32)
+#     Part 2 — SWAP_SIZE Linux swap             (swap)
+#     Part 3 — remainder                        (ext4)
 #
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
 # =============================================================================
@@ -86,17 +86,17 @@ _partition_disk() {
         # EFI | SWAP | root
         run parted -s "${DISK}" \
             mklabel gpt \
-            mkpart ESP fat32 1MiB 513MiB \
+            mkpart ESP fat32 1MiB 1025MiB \
             set 1 esp on \
-            mkpart swap linux-swap 513MiB "$(_swap_end)" \
+            mkpart swap linux-swap 1025MiB "$(_swap_end)" \
             mkpart root ext4 "$(_swap_end)" 100%
     else
         # EFI | root  (swapfile or no swap)
         run parted -s "${DISK}" \
             mklabel gpt \
-            mkpart ESP fat32 1MiB 513MiB \
+            mkpart ESP fat32 1MiB 1025MiB \
             set 1 esp on \
-            mkpart root ext4 513MiB 100%
+            mkpart root ext4 1025MiB 100%
     fi
 
     # Let the kernel re-read the partition table
@@ -105,15 +105,15 @@ _partition_disk() {
 }
 
 # Convert SWAP_SIZE (e.g. "16G", "4096M") to a parted-compatible end position
-# starting from 513MiB.
+# starting from 1025MiB.
 _swap_end() {
     local size="${SWAP_SIZE:-16G}"
     local num="${size%[GgMm]}"
     local unit="${size: -1}"
 
     case "${unit^^}" in
-        G) echo "$((513 + num * 1024))MiB" ;;
-        M) echo "$((513 + num))MiB" ;;
+        G) echo "$((1025 + num * 1024))MiB" ;;
+        M) echo "$((1025 + num))MiB" ;;
         *) die "Unsupported SWAP_SIZE unit: ${unit}. Use G or M." ;;
     esac
 }
