@@ -19,7 +19,7 @@ and are never stored in preset files.
 Boot the Arch ISO, connect to the internet, and run:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
 ```
 
 The script clones the repo automatically and uses the defaults from
@@ -30,7 +30,7 @@ The script clones the repo automatically and uses the defaults from
 Pass `--preset <name>` to use one of the ready-made presets from `config/`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset matebook
 ```
 
 The repo is cloned into `/tmp/arch-bootstrap` and `config/matebook.conf`
@@ -286,7 +286,7 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 
 ```bash
 # from the internet
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset matebook
 
 # or from a local clone
 bash bootstrap.sh --preset matebook
@@ -315,7 +315,7 @@ Ready-to-use preset for a **desktop workstation**
 
 ```bash
 # from the internet
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset station
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset station
 
 # or from a local clone
 bash bootstrap.sh --preset station
