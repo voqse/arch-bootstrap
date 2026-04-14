@@ -84,4 +84,5 @@ _export_config() {
     printf 'SWAP_PART=%q\n'  "${SWAP_PART:-}"
     printf 'SWAP_FILE=%q\n'  "${SWAP_FILE:-}"
     printf 'DISK=%q\n'       "${DISK:-}"
+    printf 'HIBERNATE_DELAY=%q\n' "${HIBERNATE_DELAY:-}"
 }
