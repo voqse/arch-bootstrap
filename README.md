@@ -55,7 +55,7 @@ bash bootstrap.sh --config config/my.conf
 
 ---
 
-In all scenarios the script will ask for credentials and timezone
+In all scenarios the script will ask for credentials, hostname, and timezone
 interactively before doing anything to the disk. It may also prompt for
 disk selection when `DISK` is not set in the preset, and will always ask
 for confirmation before partitioning. When finished:
@@ -161,8 +161,8 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials and timezone are not in preset files.**
-> Username, user password, root password, and timezone are asked interactively at
+> **Credentials, hostname, and timezone are not in preset files.**
+> Username, user password, root password, hostname, and timezone are asked interactively at
 > the very beginning of the installation run.
 
 ### Packages

@@ -33,6 +33,7 @@ fi
 # ---------------------------------------------------------------------------
 CONFIG_FILE="${SCRIPT_DIR}/config/default.conf"
 _PRESET_NAME=""
+_CONFIG_EXPLICIT=false
 
 _usage() {
     cat <<EOF
@@ -60,6 +61,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --config)
             CONFIG_FILE="${2:?--config requires a file path}"
+            _CONFIG_EXPLICIT=true
             shift 2
             ;;
         --help|-h)
@@ -74,13 +76,17 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -n "${_PRESET_NAME}" && "${CONFIG_FILE}" != "${SCRIPT_DIR}/config/default.conf" ]]; then
+if [[ -n "${_PRESET_NAME}" && "${_CONFIG_EXPLICIT}" == true ]]; then
     echo "--preset and --config are mutually exclusive." >&2
     _usage
     exit 1
 fi
 
 if [[ -n "${_PRESET_NAME}" ]]; then
+    if [[ ! "${_PRESET_NAME}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        echo "--preset name must contain only letters, digits, hyphens, or underscores." >&2
+        exit 1
+    fi
     CONFIG_FILE="${SCRIPT_DIR}/config/${_PRESET_NAME}.conf"
 fi
 
