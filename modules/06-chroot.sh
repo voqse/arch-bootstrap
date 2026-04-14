@@ -85,4 +85,10 @@ _export_config() {
     printf 'SWAP_FILE=%q\n'  "${SWAP_FILE:-}"
     printf 'DISK=%q\n'       "${DISK:-}"
     printf 'HIBERNATE_DELAY=%q\n' "${HIBERNATE_DELAY:-}"
+
+    if declare -p YAY_PACKAGES >/dev/null 2>&1; then
+        declare -p YAY_PACKAGES
+    else
+        printf '%s\n' 'declare -a YAY_PACKAGES=()'
+    fi
 }

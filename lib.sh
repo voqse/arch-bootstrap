@@ -107,6 +107,17 @@ require_var() {
     [[ -n "${!name}" ]] || die "Required variable \$${name} is not set."
 }
 
+# Return 0 if the package named $1 is present in the PACKAGES array.
+# Handles both plain "pkg" and "pkg:hook" entries.
+_has_package() {
+    local name="$1" entry pkg
+    for entry in "${PACKAGES[@]+"${PACKAGES[@]}"}"; do
+        pkg="${entry%%:*}"
+        [[ "${pkg}" == "${name}" ]] && return 0
+    done
+    return 1
+}
+
 # Section header
 section() {
     echo

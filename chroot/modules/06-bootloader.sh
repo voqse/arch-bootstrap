@@ -51,6 +51,9 @@ EOF
 
     # Kernel command line — include swap resume offset for swapfile hibernation
     local cmdline="root=UUID=${root_uuid} rw quiet"
+    if _has_package "plymouth"; then
+        cmdline+=" splash"
+    fi
     if [[ "${SWAP_TYPE:-file}" == "file" && -n "${SWAP_FILE:-}" ]]; then
         local swap_offset
         # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
@@ -90,6 +93,9 @@ _install_grub() {
     _grub_set_value "${grub_default}" "GRUB_TIMEOUT_STYLE" "${timeout_style}"
     if [[ "${disable_os_prober}" == "true" ]]; then
         _grub_set_value "${grub_default}" "GRUB_DISABLE_OS_PROBER" "true"
+    fi
+    if _has_package "plymouth"; then
+        _grub_set_value "${grub_default}" "GRUB_CMDLINE_LINUX_DEFAULT" '"quiet splash"'
     fi
 
     info "Installing GRUB for UEFI (bootloader-id: ${bootloader_id})..."
