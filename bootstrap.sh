@@ -115,6 +115,9 @@ info "Root password — leave empty to lock the root account."
 ask_password "Root password" true
 ROOT_PASSWORD="${REPLY}"
 
+ask_value "Hostname" "${HOSTNAME}"
+HOSTNAME="${REPLY}"
+
 # Timezone is not a preset value — it must always be chosen at install time.
 while true; do
     ask_value "Timezone" "${TIMEZONE:-UTC}"
