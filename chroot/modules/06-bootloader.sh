@@ -71,6 +71,11 @@ $(printf '%b' "${microcode_lines}")initrd  /initramfs-linux.img
 options ${cmdline}
 EOF
 
+    # Enable automatic EFI binary updates whenever systemd is upgraded.
+    # Ref: https://wiki.archlinux.org/title/Systemd-boot#Automatic_update
+    systemctl enable systemd-boot-update.service
+    info "systemd-boot-update.service enabled."
+
     success "systemd-boot installed and configured."
 }
 
