@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Hook: gnome-shell
-# Sets a solid #000000 (black) desktop background for:
-#   - All GNOME user sessions (via system-wide dconf override)
-#   - GDM login screen (via GDM dconf database)
+# Configures GNOME Shell via system-wide dconf overrides:
+#   - Solid #000000 (black) desktop background for user sessions and GDM
+#   - Enables AppIndicator tray icon extension
+#   - Custom keyboard shortcuts: Ctrl+Alt+T (terminal), Ctrl+Shift+Esc (btop)
 
 # ---------------------------------------------------------------------------
 # 1. User sessions — system-wide dconf local override
@@ -24,6 +25,28 @@ primary-color='#000000'
 color-shading-type='solid'
 picture-uri=''
 picture-uri-dark=''
+EOF
+
+cat > /etc/dconf/db/local.d/01-extensions <<'EOF'
+[org/gnome/shell]
+# Fresh-install bootstrap: no prior extensions exist, so a full assignment is safe here.
+enabled-extensions=['appindicatorsupport@rgcjonas.gmail.com']
+EOF
+
+cat > /etc/dconf/db/local.d/02-keybindings <<'EOF'
+[org/gnome/settings-daemon/plugins/media-keys]
+# Fresh-install bootstrap: no prior custom keybindings exist, so a full assignment is safe here.
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/']
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+binding='<Control><Alt>t'
+command='kgx'
+name='Terminal'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
+binding='<Control><Shift>Escape'
+command='kgx -- btop'
+name='Task Manager'
 EOF
 
 # ---------------------------------------------------------------------------
