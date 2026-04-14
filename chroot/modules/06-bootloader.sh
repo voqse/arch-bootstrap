@@ -104,9 +104,11 @@ _install_grub() {
     if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
         local _cmdline_line _cmdline_value
         for _param in "${KERNEL_PARAMS[@]}"; do
+            # Read the current line fresh each iteration: _grub_set_value updates
+            # the file in-place, so subsequent params must see the updated value.
+            _cmdline_line="$(grep -m1 '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" 2>/dev/null || true)"
             # Check and append only on the GRUB_CMDLINE_LINUX_DEFAULT line.
-            if ! grep '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" | grep -qF -- "${_param}"; then
-                _cmdline_line="$(grep -m1 '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" 2>/dev/null || true)"
+            if ! echo "${_cmdline_line}" | grep -qF -- "${_param}"; then
                 _cmdline_value="${_cmdline_line#GRUB_CMDLINE_LINUX_DEFAULT=}"
                 _cmdline_value="${_cmdline_value#\"}"
                 _cmdline_value="${_cmdline_value%\"}"
