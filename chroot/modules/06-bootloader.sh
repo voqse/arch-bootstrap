@@ -63,6 +63,9 @@ EOF
             cmdline+=" resume=UUID=${root_uuid} resume_offset=${swap_offset}"
         fi
     fi
+    if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
+        cmdline+=" ${KERNEL_PARAMS[*]}"
+    fi
 
     cat > "${esp}/loader/entries/arch.conf" <<EOF
 title   Arch Linux
@@ -97,6 +100,13 @@ _install_grub() {
         # Append 'splash' to the existing cmdline only if not already present.
         sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/{/splash/!s/"$/ splash"/}' "${grub_default}"
         info "GRUB: appended 'splash' to GRUB_CMDLINE_LINUX_DEFAULT"
+    fi
+    if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
+        for _param in "${KERNEL_PARAMS[@]}"; do
+            sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/{/${_param//./\\.}/!s/\"$/ ${_param}\"/}" "${grub_default}"
+        done
+        info "GRUB: appended KERNEL_PARAMS to GRUB_CMDLINE_LINUX_DEFAULT"
+        unset _param
     fi
 
     info "Installing GRUB for UEFI (bootloader-id: Linux Boot Manager)..."
