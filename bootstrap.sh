@@ -91,6 +91,16 @@ info "Root password — leave empty to lock the root account."
 ask_password "Root password" true
 ROOT_PASSWORD="${REPLY}"
 
+# Timezone is not a preset value — it must always be chosen at install time.
+while true; do
+    ask_value "Timezone" "${TIMEZONE:-UTC}"
+    if [[ -f "/usr/share/zoneinfo/${REPLY}" ]]; then
+        TIMEZONE="${REPLY}"
+        break
+    fi
+    warn "Unknown timezone '${REPLY}'. Check /usr/share/zoneinfo/ for valid entries."
+done
+
 # ---------------------------------------------------------------------------
 # Run installation pipeline
 # ---------------------------------------------------------------------------

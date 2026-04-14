@@ -129,6 +129,26 @@ _part() {
     fi
 }
 
+# Compute the ext4 reserved-blocks percentage for the given block device.
+# Reserved space is proportional to disk size so that large disks don't waste
+# gigabytes on blocks that are rarely needed by root.
+#   ≤ 512 GiB → 1 %
+#   ≤ 1024 GiB → 0.5 %
+#   > 1024 GiB → 0.25 %
+_reserved_percent() {
+    local dev="$1"
+    local size_bytes
+    size_bytes=$(blockdev --getsize64 "${dev}" 2>/dev/null || echo 0)
+    local gib=$(( size_bytes / 1024 / 1024 / 1024 ))
+    if (( gib <= 512 )); then
+        echo 1
+    elif (( gib <= 1024 )); then
+        echo 0.5
+    else
+        echo 0.25
+    fi
+}
+
 _format_partitions() {
     info "Formatting partitions..."
 
@@ -142,7 +162,7 @@ _format_partitions() {
 
         run mkfs.fat -F32 "${efi_part}"
         run mkswap "${swap_part}"
-        run mkfs.ext4 -F "${root_part}"
+        run mkfs.ext4 -F -m "$(_reserved_percent "${root_part}")" "${root_part}"
 
         EFI_PART="${efi_part}"
         SWAP_PART="${swap_part}"
@@ -151,7 +171,7 @@ _format_partitions() {
         root_part=$(_part 2)
 
         run mkfs.fat -F32 "${efi_part}"
-        run mkfs.ext4 -F "${root_part}"
+        run mkfs.ext4 -F -m "$(_reserved_percent "${root_part}")" "${root_part}"
 
         EFI_PART="${efi_part}"
         SWAP_PART=""
