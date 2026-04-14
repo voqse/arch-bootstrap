@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Module 02 — Disk partitioning, formatting and mounting
-# Layout:
-#   Part 1 — 512 MiB  EFI System Partition  (FAT32)
-#   Part 2 — SWAP_SIZE Linux swap            (swap)
-#   Part 3 — remainder                       (ext4)
+#
+# Partition layouts (GPT / UEFI):
+#   SWAP_TYPE=file | none:
+#     Part 1 — 512 MiB  EFI System Partition  (FAT32)
+#     Part 2 — remainder                       (ext4)
+#
+#   SWAP_TYPE=partition:
+#     Part 1 — 512 MiB  EFI System Partition  (FAT32)
+#     Part 2 — SWAP_SIZE Linux swap            (swap)
+#     Part 3 — remainder                       (ext4)
+#
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
 # =============================================================================
 
@@ -75,7 +82,7 @@ _partition_disk() {
     # Wipe existing partition table
     run sgdisk --zap-all "${DISK}"
 
-    if [[ "${USE_SWAP:-true}" == "true" ]]; then
+    if [[ "${SWAP_TYPE:-file}" == "partition" ]]; then
         # EFI | SWAP | root
         run parted -s "${DISK}" \
             mklabel gpt \
@@ -84,7 +91,7 @@ _partition_disk() {
             mkpart swap linux-swap 513MiB "$(_swap_end)" \
             mkpart root ext4 "$(_swap_end)" 100%
     else
-        # EFI | root
+        # EFI | root  (swapfile or no swap)
         run parted -s "${DISK}" \
             mklabel gpt \
             mkpart ESP fat32 1MiB 513MiB \
@@ -126,10 +133,11 @@ _format_partitions() {
     info "Formatting partitions..."
 
     local efi_part root_part
+    efi_part=$(_part 1)
 
-    if [[ "${USE_SWAP:-true}" == "true" ]]; then
-        efi_part=$(_part 1)
-        local swap_part=$(_part 2)
+    if [[ "${SWAP_TYPE:-file}" == "partition" ]]; then
+        local swap_part
+        swap_part=$(_part 2)
         root_part=$(_part 3)
 
         run mkfs.fat -F32 "${efi_part}"
@@ -140,7 +148,6 @@ _format_partitions() {
         SWAP_PART="${swap_part}"
         ROOT_PART="${root_part}"
     else
-        efi_part=$(_part 1)
         root_part=$(_part 2)
 
         run mkfs.fat -F32 "${efi_part}"
@@ -157,15 +164,49 @@ _format_partitions() {
 _mount_partitions() {
     info "Mounting partitions..."
 
+    local efi_mountpoint="${EFI_MOUNTPOINT:-/boot}"
+
     run mount "${ROOT_PART}" /mnt
+    run mkdir -p "/mnt${efi_mountpoint}"
+    run mount "${EFI_PART}" "/mnt${efi_mountpoint}"
 
-    run mkdir -p /mnt/boot/efi
-    run mount "${EFI_PART}" /mnt/boot/efi
-
-    if [[ -n "${SWAP_PART:-}" ]]; then
-        run swapon "${SWAP_PART}"
-    fi
+    case "${SWAP_TYPE:-file}" in
+        partition)
+            run swapon "${SWAP_PART}"
+            ;;
+        file)
+            _create_swapfile
+            ;;
+        none)
+            info "Swap disabled."
+            ;;
+        *)
+            die "Unknown SWAP_TYPE '${SWAP_TYPE}'. Use: file, partition, none."
+            ;;
+    esac
 
     success "Partitions mounted."
     lsblk "${DISK}"
+}
+
+_create_swapfile() {
+    local swap_size="${SWAP_SIZE:-16G}"
+    local swap_path="/mnt/swap/swapfile"
+
+    info "Creating swapfile (${swap_size}) at ${swap_path}..."
+
+    run mkdir -p /mnt/swap
+
+    # Disable Copy-on-Write for the swap directory (no-op on ext4, safe on btrfs)
+    chattr +C /mnt/swap 2>/dev/null || true
+
+    run fallocate -l "${swap_size}" "${swap_path}"
+    run chmod 600 "${swap_path}"
+    run mkswap "${swap_path}"
+    run swapon "${swap_path}"
+
+    # Export for _export_config
+    SWAP_FILE="/swap/swapfile"
+
+    success "Swapfile created and activated."
 }
