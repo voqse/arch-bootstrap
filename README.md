@@ -14,23 +14,51 @@ and are never stored in preset files.
 
 > **Security note:** Always download and review scripts before executing them.
 
+### Scenario 1 — one-liner, no customisation
+
+Boot the Arch ISO, connect to the internet, and run:
+
 ```bash
-# 1. Boot the Arch Linux ISO and connect to the internet
-# 2. Download the script and a preset
-curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh -o bootstrap.sh
-curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/config/default.conf -o my.conf
-
-# 3. Edit the preset to match your hardware and preferences
-nano my.conf
-
-# 4. Run — you will be asked for username and passwords before anything starts
-bash bootstrap.sh --config my.conf
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh)
 ```
 
-The script will ask for credentials and timezone first, then continue
-with the installation. It may also prompt for disk selection when `DISK`
-is not set in the preset, and will always ask for confirmation before
-partitioning. When finished:
+The script clones the repo automatically and uses the defaults from
+`config/default.conf`.
+
+### Scenario 2 — one-liner with a built-in preset
+
+Pass `--preset <name>` to use one of the ready-made presets from `config/`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook-d16
+```
+
+The repo is cloned into `/tmp/arch-bootstrap` and `config/matebook-d16.conf`
+is used automatically — no manual file management needed.
+
+### Scenario 3 — local clone, custom config
+
+For full control, clone the repo and supply your own config:
+
+```bash
+# Clone and create your own preset based on the defaults
+git clone https://github.com/voqse/arch-bootstrap
+cd arch-bootstrap
+cp config/default.conf config/my.conf
+
+# Edit the preset to match your hardware and preferences
+nano config/my.conf
+
+# Run — you will be asked for credentials and timezone first
+bash bootstrap.sh --config config/my.conf
+```
+
+---
+
+In all scenarios the script will ask for credentials, hostname, and timezone
+interactively before doing anything to the disk. It may also prompt for
+disk selection when `DISK` is not set in the preset, and will always ask
+for confirmation before partitioning. When finished:
 
 ```bash
 umount -R /mnt
@@ -133,8 +161,8 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials and timezone are not in preset files.**
-> Username, user password, root password, and timezone are asked interactively at
+> **Credentials, hostname, and timezone are not in preset files.**
+> Username, user password, root password, hostname, and timezone are asked interactively at
 > the very beginning of the installation run.
 
 ### Packages
@@ -224,6 +252,10 @@ Each entry is passed verbatim to `systemctl enable` inside the chroot.
 
 ## Presets
 
+Every preset inherits all values from `config/default.conf` and only needs
+to override what differs. This means a preset can be as short as a handful
+of lines while still producing a complete, valid configuration.
+
 ### `config/default.conf`
 
 Minimal base preset. Contains only what is needed for a functional system.
@@ -251,7 +283,11 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 | Firmware | `fwupd` + `fwupd-refresh.timer` |
 
 ```bash
-bash bootstrap.sh --config config/matebook-d16.conf
+# from the internet
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh) --preset matebook-d16
+
+# or from a local clone
+bash bootstrap.sh --preset matebook-d16
 ```
 
 ---

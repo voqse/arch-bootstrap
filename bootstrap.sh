@@ -32,6 +32,8 @@ fi
 # Argument parsing
 # ---------------------------------------------------------------------------
 CONFIG_FILE="${SCRIPT_DIR}/config/default.conf"
+_PRESET_NAME=""
+_CONFIG_EXPLICIT=false
 
 _usage() {
     cat <<EOF
@@ -40,16 +42,26 @@ Usage: ${0##*/} [OPTIONS]
 Modular Arch Linux installation script.
 
 Options:
+  --preset NAME   Name of a built-in preset from config/<NAME>.conf.
+                  Works when running via "bash <(curl ...)" — the repo is
+                  cloned automatically and the preset is resolved from it.
   --config FILE   Path to a configuration preset file.
                   (default: config/default.conf next to this script)
   --help          Show this help message and exit.
+
+Only one of --preset or --config may be specified at a time.
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --preset)
+            _PRESET_NAME="${2:?--preset requires a preset name}"
+            shift 2
+            ;;
         --config)
             CONFIG_FILE="${2:?--config requires a file path}"
+            _CONFIG_EXPLICIT=true
             shift 2
             ;;
         --help|-h)
@@ -63,6 +75,20 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [[ -n "${_PRESET_NAME}" && "${_CONFIG_EXPLICIT}" == true ]]; then
+    echo "--preset and --config are mutually exclusive." >&2
+    _usage
+    exit 1
+fi
+
+if [[ -n "${_PRESET_NAME}" ]]; then
+    if [[ ! "${_PRESET_NAME}" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        echo "--preset name must contain only letters, digits, hyphens, or underscores." >&2
+        exit 1
+    fi
+    CONFIG_FILE="${SCRIPT_DIR}/config/${_PRESET_NAME}.conf"
+fi
 
 # ---------------------------------------------------------------------------
 # Bootstrap
@@ -114,6 +140,9 @@ INSTALL_USER_PASSWORD="${REPLY}"
 info "Root password — leave empty to lock the root account."
 ask_password "Root password" true
 ROOT_PASSWORD="${REPLY}"
+
+ask_value "Hostname" "${HOSTNAME}"
+HOSTNAME="${REPLY}"
 
 # Timezone is not a preset value — it must always be chosen at install time.
 while true; do
