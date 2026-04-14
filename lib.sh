@@ -7,14 +7,13 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { echo -e "${CYAN}[INFO]${RESET}  $*"; }
-success() { echo -e "${GREEN}[OK]${RESET}    $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${RESET}  $*"; }
-error()   { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
+info()    { echo -e "  ${BOLD}>${RESET} $*"; }
+success() { echo -e "  ${GREEN}✓${RESET} $*"; }
+warn()    { echo -e "  ${YELLOW}!${RESET} $*" >&2; }
+error()   { echo -e "  ${RED}✗${RESET} $*" >&2; }
 die()     { error "$*"; exit 1; }
 
 # Ask for a password (hidden input), confirmed by a second prompt.
@@ -108,11 +107,9 @@ require_var() {
     [[ -n "${!name}" ]] || die "Required variable \$${name} is not set."
 }
 
-# Pretty section header
+# Section header
 section() {
     echo
-    echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-    echo -e "${BOLD}${CYAN}  $*${RESET}"
-    echo -e "${BOLD}${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${BOLD}==> $*${RESET}"
     echo
 }

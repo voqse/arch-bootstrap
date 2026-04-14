@@ -98,21 +98,30 @@ bash bootstrap.sh --config config/my.conf
 
 ### Disk
 
-| Variable    | Description                                        | Default |
-|-------------|----------------------------------------------------|---------|
-| `DISK`      | Device path, e.g. `/dev/nvme0n1`. Empty = prompt   | `""`    |
-| `USE_SWAP`  | Create a swap partition                            | `true`  |
-| `SWAP_SIZE` | Swap size, e.g. `16G` or `4096M`                  | `16G`   |
+| Variable     | Description                                                  | Default       |
+|--------------|--------------------------------------------------------------|---------------|
+| `DISK`       | Device path, e.g. `/dev/nvme0n1`. Empty = prompt            | `""`          |
+| `SWAP_TYPE`  | `file` — swapfile at `/swap/swapfile`; `partition` — dedicated swap partition; `none` — no swap | `file` |
+| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`                            | `16G`         |
 
 Partition layout (GPT / UEFI only):
+
+`SWAP_TYPE=file` or `none`:
+
+| # | Size      | Type                 | Filesystem |
+|---|-----------|----------------------|------------|
+| 1 | 512 MiB   | EFI System Partition | FAT32      |
+| 2 | remainder | Linux filesystem     | ext4       |
+
+Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
+
+`SWAP_TYPE=partition`:
 
 | # | Size        | Type                 | Filesystem |
 |---|-------------|----------------------|------------|
 | 1 | 512 MiB     | EFI System Partition | FAT32      |
 | 2 | `SWAP_SIZE` | Linux swap           | swap       |
 | 3 | remainder   | Linux filesystem     | ext4       |
-
-Swap is omitted when `USE_SWAP=false`.
 
 ### System identity
 
@@ -169,24 +178,28 @@ ufw --force enable
 Scripts execute inside `arch-chroot` after all packages have been installed,
 so full system tools (dconf, systemctl, etc.) are available.
 
-### Bootloader (GRUB)
+### Bootloader
 
 | Variable                 | Description                                         | Default               |
 |--------------------------|-----------------------------------------------------|-----------------------|
-| `BOOTLOADER`             | Bootloader type (only `grub` supported)             | `grub`                |
-| `GRUB_BOOTLOADER_ID`     | EFI firmware boot-menu label                        | `Linux Boot Manager`  |
-| `GRUB_TIMEOUT`           | Seconds before auto-boot (`0` = immediate)          | `0`                   |
-| `GRUB_TIMEOUT_STYLE`     | `menu` \| `countdown` \| `hidden`                  | `hidden`              |
-| `GRUB_DISABLE_OS_PROBER` | `true` = single-entry config, skip multi-boot probe | `true`                |
+| `BOOTLOADER`             | Bootloader type: `systemd-boot` (default) or `grub` | `systemd-boot`        |
+| `EFI_MOUNTPOINT`         | Where the ESP is mounted                            | `/boot`               |
+| `GRUB_BOOTLOADER_ID`     | EFI firmware boot-menu label (GRUB only)            | `Linux Boot Manager`  |
+| `GRUB_TIMEOUT`           | Seconds before auto-boot (`0` = immediate; GRUB only) | `0`                 |
+| `GRUB_TIMEOUT_STYLE`     | `menu` \| `countdown` \| `hidden` (GRUB only)      | `hidden`              |
+| `GRUB_DISABLE_OS_PROBER` | `true` = skip multi-boot probe (GRUB only)          | `true`                |
 
-The defaults produce a silent, instant single-OS boot. Override to show a
-menu (e.g. for dual-boot):
+**systemd-boot** (default) — silent instant boot, microcode auto-detected,
+swapfile resume offset written to the boot entry automatically.
+
+To use **GRUB** instead (e.g. for dual-boot):
 
 ```bash
+BOOTLOADER="grub"
+BOOTLOADER_PACKAGES=("grub" "efibootmgr")        # add "os-prober" for multi-boot
 GRUB_TIMEOUT=5
 GRUB_TIMEOUT_STYLE="menu"
 GRUB_DISABLE_OS_PROBER=false
-BOOTLOADER_PACKAGES=("grub" "efibootmgr" "os-prober")
 ```
 
 ### Services
@@ -229,7 +242,7 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 | Bluetooth | BlueZ |
 | Firewall | UFW (deny in / allow out) |
 | Background | Solid black `#000000` (desktop + GDM) |
-| GRUB | Silent boot, EFI label "Linux Boot Manager" |
+| Boot | systemd-boot (default) — silent instant boot |
 | SSD | `fstrim.timer` enabled |
 | Firmware | `fwupd` + `fwupd-refresh.timer` |
 
@@ -255,6 +268,6 @@ bash bootstrap.sh --config config/matebook-d16.conf
 | — | (chroot) hostname | `/etc/hostname`, `/etc/hosts` |
 | — | (chroot) initramfs | `mkinitcpio -P` |
 | — | (chroot) users | Root password, user account, `/etc/sudoers.d/wheel` |
-| — | (chroot) bootloader | GRUB install + `grub-mkconfig` |
+| — | (chroot) bootloader | systemd-boot or GRUB install + config |
 | — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
 | — | (chroot) hooks | Per-package configuration scripts from `hooks/` |
