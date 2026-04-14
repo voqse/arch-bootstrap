@@ -20,7 +20,17 @@ HibernateDelaySec=${HIBERNATE_DELAY}
 EOF
     success "HibernateDelaySec=${HIBERNATE_DELAY} written to sleep.conf.d."
 
-    # -- logind: battery → suspend-then-hibernate; AC power → screen lock only
+    # -- mkinitcpio: add resume hook so the kernel can resume from hibernation ---
+    if grep -q '\bresume\b' /etc/mkinitcpio.conf; then
+        info "mkinitcpio: 'resume' hook already present."
+    else
+        # Insert 'resume' immediately before 'filesystems' in the HOOKS line.
+        sed -i '/^HOOKS=/ s/filesystems/resume filesystems/' /etc/mkinitcpio.conf
+        info "mkinitcpio: added 'resume' hook before 'filesystems'."
+        run mkinitcpio -P
+    fi
+
+    # -- logind: lid-close on battery → suspend-then-hibernate; lid-close on AC → lock only
     mkdir -p /etc/systemd/logind.conf.d
     cat > /etc/systemd/logind.conf.d/hibernate.conf <<EOF
 [Login]
@@ -28,5 +38,5 @@ HandleSuspendKey=suspend-then-hibernate
 HandleLidSwitch=suspend-then-hibernate
 HandleLidSwitchExternalPower=lock
 EOF
-    success "logind configured: battery=suspend-then-hibernate, AC=lock (screen off)."
+    success "logind configured: lid-close on battery=suspend-then-hibernate, lid-close on AC=lock."
 }

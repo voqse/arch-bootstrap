@@ -72,9 +72,12 @@ for _entry in \
     qv4l2.desktop \
     qvidcap.desktop
 do
+    _name="${_entry%.desktop}"
     cat > "/usr/local/share/applications/${_entry}" <<EOF
 [Desktop Entry]
+Type=Application
+Name=${_name}
 NoDisplay=true
 EOF
 done
-unset _entry
+unset _entry _name
