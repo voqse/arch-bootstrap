@@ -95,9 +95,9 @@ arch-bootstrap/
 │       ├── 03-hostname.sh    # /etc/hostname, /etc/hosts
 │       ├── 04-initramfs.sh   # mkinitcpio
 │       ├── 05-users.sh       # Root password + user accounts + sudoers
-│       ├── 06-bootloader.sh  # GRUB (UEFI)
-│       ├── 07-hooks.sh       # Per-package configuration scripts
-│       └── 08-services.sh    # systemctl enable for SERVICES array
+│       ├── 06-bootloader.sh  # systemd-boot install + config
+│       ├── 07-services.sh    # systemctl enable for SERVICES array
+│       └── 08-hooks.sh       # Per-package configuration scripts
 │
 └── hooks/                    # Per-package configuration scripts
     ├── gnome-shell.sh        # GNOME appearance — solid black background
@@ -182,11 +182,6 @@ PACKAGES=(            # Additional packages; optionally with a config hook
     "ufw:ufw"                     # explicit hook → runs hooks/ufw.sh
     "gnome-shell"                 # auto hook  → runs hooks/gnome-shell.sh
 )
-
-BOOTLOADER_PACKAGES=( # Bootloader-related packages
-    "grub"
-    "efibootmgr"
-)
 ```
 
 #### Per-package configuration scripts
@@ -214,21 +209,14 @@ so full system tools (dconf, systemctl, etc.) are available.
 
 ### Bootloader
 
-| Variable                 | Description                                         | Default               |
-|--------------------------|-----------------------------------------------------|-----------------------|
-| `BOOTLOADER`             | Bootloader type: `systemd-boot` (default) or `grub` | `systemd-boot`        |
-| `EFI_MOUNTPOINT`         | Where the ESP is mounted                            | `/boot`               |
-| `KERNEL_PARAMS`          | Extra kernel command-line parameters                | `()`                  |
+| Variable         | Description                          | Default  |
+|------------------|--------------------------------------|----------|
+| `EFI_MOUNTPOINT` | Where the ESP is mounted             | `/boot`  |
+| `KERNEL_PARAMS`  | Extra kernel command-line parameters | `()`     |
 
-**systemd-boot** (default) — silent instant boot, microcode auto-detected,
-swapfile resume offset written to the boot entry automatically.
-
-To use **GRUB** instead (e.g. for dual-boot):
-
-```bash
-BOOTLOADER="grub"
-BOOTLOADER_PACKAGES=("grub" "efibootmgr")        # add "os-prober" for multi-boot
-```
+systemd-boot is always used. It provides a silent instant-boot experience, with
+microcode images auto-detected and swapfile resume offset written to the boot
+entry automatically.
 
 Extra kernel parameters are appended to the boot entry by the bootloader module.
 Use `+=` in preset files to extend without overwriting defaults:
@@ -339,6 +327,6 @@ bash bootstrap.sh --preset station
 | — | (chroot) hostname | `/etc/hostname`, `/etc/hosts` |
 | — | (chroot) initramfs | `mkinitcpio -P` |
 | — | (chroot) users | Root password, user account, `/etc/sudoers.d/wheel` |
-| — | (chroot) bootloader | systemd-boot or GRUB install + config |
+| — | (chroot) bootloader | systemd-boot install + config |
 | — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
 | — | (chroot) hooks | Per-package configuration scripts from `hooks/` |

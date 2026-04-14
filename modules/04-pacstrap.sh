@@ -20,11 +20,6 @@ module_pacstrap() {
         all_packages+=("${entry%%:*}")
     done
 
-    # Bootloader packages
-    for entry in "${BOOTLOADER_PACKAGES[@]}"; do
-        all_packages+=("${entry%%:*}")
-    done
-
     info "Installing packages: ${all_packages[*]}"
     run pacstrap -K /mnt "${all_packages[@]}"
     success "pacstrap completed."

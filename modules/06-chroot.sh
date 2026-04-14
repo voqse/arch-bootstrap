@@ -59,7 +59,6 @@ _export_config() {
         printf '%s\n' 'declare -a USERS=()'
     fi
 
-    printf 'BOOTLOADER=%q\n'              "${BOOTLOADER:-systemd-boot}"
     printf 'EFI_MOUNTPOINT=%q\n'          "${EFI_MOUNTPOINT:-/boot}"
 
     if declare -p PACKAGES >/dev/null 2>&1; then

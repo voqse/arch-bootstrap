@@ -9,15 +9,26 @@
 chroot_initramfs() {
     section "Initramfs"
 
-    # Insert the 'plymouth' hook after the 'systemd' hook when plymouth is installed.
-    # The hook must be placed after 'systemd' per the wiki recommendation.
+    # Insert the correct Plymouth hook depending on the initramfs type:
+    # - systemd-based initramfs: sd-plymouth must come after the 'systemd' hook.
+    # - busybox/udev-based initramfs (Arch default): plymouth must come after 'udev'.
     # Ref: https://wiki.archlinux.org/title/Plymouth#mkinitcpio
     if _has_package "plymouth"; then
-        info "Adding plymouth hook to mkinitcpio..."
-        # Idempotent: only insert 'plymouth' after 'systemd' if 'plymouth' is not already on the HOOKS line.
-        sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<systemd\>/systemd plymouth/; }' /etc/mkinitcpio.conf
+        if _hooks_contain systemd; then
+            info "Adding sd-plymouth hook after 'systemd' (systemd-based initramfs)..."
+            sed -i '/^HOOKS=/{ /\<sd-plymouth\>/! s/\<systemd\>/systemd sd-plymouth/; }' /etc/mkinitcpio.conf
+        else
+            info "Adding plymouth hook after 'udev' (udev-based initramfs)..."
+            sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<udev\>/udev plymouth/; }' /etc/mkinitcpio.conf
+        fi
     fi
 
     run mkinitcpio -P
     success "Initramfs images created."
+}
+
+# Return 0 if the specified hook appears in the HOOKS=(...) line of mkinitcpio.conf.
+_hooks_contain() {
+    local hook="$1"
+    grep -qE "^HOOKS=\([^)]*\b${hook}\b[^)]*\)" /etc/mkinitcpio.conf 2>/dev/null
 }
