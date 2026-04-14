@@ -13,6 +13,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ---------------------------------------------------------------------------
+# Self-bootstrap: when run via "bash <(curl ...)" the script is fed through a
+# file-descriptor, so SCRIPT_DIR resolves to /dev/fd or similar and sibling
+# files (lib.sh, modules/) are absent.  Clone the repo into a temp directory
+# and re-execute from there so that all relative paths work correctly.
+# ---------------------------------------------------------------------------
+_REPO_URL="https://github.com/voqse/arch-bootstrap"
+_CLONE_DIR="/tmp/arch-bootstrap"
+
+if [[ ! -f "${SCRIPT_DIR}/lib.sh" || ! -d "${SCRIPT_DIR}/modules" ]]; then
+    echo "==> Sibling files not found — cloning ${_REPO_URL} into ${_CLONE_DIR} ..."
+    rm -rf "${_CLONE_DIR}"
+    git clone --depth=1 "${_REPO_URL}" "${_CLONE_DIR}"
+    exec bash "${_CLONE_DIR}/bootstrap.sh" "$@"
+fi
+
+# ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 CONFIG_FILE="${SCRIPT_DIR}/config/default.conf"
