@@ -102,14 +102,24 @@ _install_grub() {
         info "GRUB: appended 'splash' to GRUB_CMDLINE_LINUX_DEFAULT"
     fi
     if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
+        local _cmdline_line _cmdline_value
         for _param in "${KERNEL_PARAMS[@]}"; do
             # Check and append only on the GRUB_CMDLINE_LINUX_DEFAULT line.
-            if ! grep '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" | grep -qF "${_param}"; then
-                sed -i "/^GRUB_CMDLINE_LINUX_DEFAULT=/{/${_param}/!s/\"$/ ${_param}\"/}" "${grub_default}"
+            if ! grep '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" | grep -qF -- "${_param}"; then
+                _cmdline_line="$(grep -m1 '^GRUB_CMDLINE_LINUX_DEFAULT=' "${grub_default}" 2>/dev/null || true)"
+                _cmdline_value="${_cmdline_line#GRUB_CMDLINE_LINUX_DEFAULT=}"
+                _cmdline_value="${_cmdline_value#\"}"
+                _cmdline_value="${_cmdline_value%\"}"
+                if [[ -n "${_cmdline_value}" ]]; then
+                    _cmdline_value="${_cmdline_value} ${_param}"
+                else
+                    _cmdline_value="${_param}"
+                fi
+                _grub_set_value "${grub_default}" "GRUB_CMDLINE_LINUX_DEFAULT" "\"${_cmdline_value}\""
             fi
         done
         info "GRUB: appended KERNEL_PARAMS to GRUB_CMDLINE_LINUX_DEFAULT"
-        unset _param
+        unset _param _cmdline_line _cmdline_value
     fi
 
     info "Installing GRUB for UEFI (bootloader-id: Linux Boot Manager)..."
