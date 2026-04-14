@@ -14,7 +14,7 @@ chroot_initramfs() {
     # Ref: https://wiki.archlinux.org/title/Plymouth#mkinitcpio
     if _has_package "plymouth"; then
         info "Adding plymouth hook to mkinitcpio..."
-        sed -i '/^HOOKS=/s/\bsystemd\b/systemd plymouth/' /etc/mkinitcpio.conf
+        sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<systemd\>/systemd plymouth/; }' /etc/mkinitcpio.conf
     fi
 
     run mkinitcpio -P

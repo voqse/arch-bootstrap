@@ -89,7 +89,9 @@ _install_grub() {
     _grub_set_value "${grub_default}" "GRUB_TIMEOUT_STYLE"      "hidden"
     _grub_set_value "${grub_default}" "GRUB_DISABLE_OS_PROBER"  "true"
     if _has_package "plymouth"; then
-        _grub_set_value "${grub_default}" "GRUB_CMDLINE_LINUX_DEFAULT" '"quiet splash"'
+        # Append 'splash' to the existing cmdline only if not already present.
+        sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/{/splash/!s/"$/ splash"/}' "${grub_default}"
+        info "GRUB: appended 'splash' to GRUB_CMDLINE_LINUX_DEFAULT"
     fi
 
     info "Installing GRUB for UEFI (bootloader-id: Linux Boot Manager)..."

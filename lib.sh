@@ -107,11 +107,14 @@ require_var() {
     [[ -n "${!name}" ]] || die "Required variable \$${name} is not set."
 }
 
-# Return 0 if the package named $1 is present in the PACKAGES array.
+# Return 0 if the package named $1 is present in any installed package array.
 # Handles both plain "pkg" and "pkg:hook" entries.
 _has_package() {
     local name="$1" entry pkg
-    for entry in "${PACKAGES[@]+"${PACKAGES[@]}"}"; do
+    for entry in \
+        "${PACKAGES[@]+"${PACKAGES[@]}"}" \
+        "${BASE_PACKAGES[@]+"${BASE_PACKAGES[@]}"}" \
+        "${BOOTLOADER_PACKAGES[@]+"${BOOTLOADER_PACKAGES[@]}"}"; do
         pkg="${entry%%:*}"
         [[ "${pkg}" == "${name}" ]] && return 0
     done

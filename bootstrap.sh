@@ -164,8 +164,14 @@ while true; do
 done
 
 if [[ "${SWAP_TYPE}" != "none" ]]; then
-    ask_value "Swap size" "${SWAP_SIZE:-16G}"
-    SWAP_SIZE="${REPLY}"
+    while true; do
+        ask_value "Swap size" "${SWAP_SIZE:-16G}"
+        if [[ "${REPLY}" =~ ^[1-9][0-9]*[MG]$ ]]; then
+            SWAP_SIZE="${REPLY}"
+            break
+        fi
+        warn "Invalid swap size. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+    done
 fi
 
 # ---------------------------------------------------------------------------
