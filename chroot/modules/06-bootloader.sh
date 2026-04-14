@@ -51,6 +51,9 @@ EOF
 
     # Kernel command line — include swap resume offset for swapfile hibernation
     local cmdline="root=UUID=${root_uuid} rw quiet"
+    if _has_package "plymouth"; then
+        cmdline+=" splash"
+    fi
     if [[ "${SWAP_TYPE:-file}" == "file" && -n "${SWAP_FILE:-}" ]]; then
         local swap_offset
         # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
@@ -79,24 +82,23 @@ _install_grub() {
     require_var DISK
 
     local esp="${EFI_MOUNTPOINT:-/boot}"
-    local bootloader_id="${GRUB_BOOTLOADER_ID:-Linux Boot Manager}"
-    local timeout="${GRUB_TIMEOUT:-0}"
-    local timeout_style="${GRUB_TIMEOUT_STYLE:-hidden}"
-    local disable_os_prober="${GRUB_DISABLE_OS_PROBER:-true}"
 
     # Apply GRUB defaults before generating the config
     local grub_default="/etc/default/grub"
-    _grub_set_value "${grub_default}" "GRUB_TIMEOUT"       "${timeout}"
-    _grub_set_value "${grub_default}" "GRUB_TIMEOUT_STYLE" "${timeout_style}"
-    if [[ "${disable_os_prober}" == "true" ]]; then
-        _grub_set_value "${grub_default}" "GRUB_DISABLE_OS_PROBER" "true"
+    _grub_set_value "${grub_default}" "GRUB_TIMEOUT"            0
+    _grub_set_value "${grub_default}" "GRUB_TIMEOUT_STYLE"      "hidden"
+    _grub_set_value "${grub_default}" "GRUB_DISABLE_OS_PROBER"  "true"
+    if _has_package "plymouth"; then
+        # Append 'splash' to the existing cmdline only if not already present.
+        sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/{/splash/!s/"$/ splash"/}' "${grub_default}"
+        info "GRUB: appended 'splash' to GRUB_CMDLINE_LINUX_DEFAULT"
     fi
 
-    info "Installing GRUB for UEFI (bootloader-id: ${bootloader_id})..."
+    info "Installing GRUB for UEFI (bootloader-id: Linux Boot Manager)..."
     run grub-install \
         --target=x86_64-efi \
         "--efi-directory=${esp}" \
-        "--bootloader-id=${bootloader_id}" \
+        "--bootloader-id=Linux Boot Manager" \
         "${DISK}"
 
     info "Generating GRUB configuration..."

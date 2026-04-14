@@ -61,10 +61,6 @@ _export_config() {
 
     printf 'BOOTLOADER=%q\n'              "${BOOTLOADER:-systemd-boot}"
     printf 'EFI_MOUNTPOINT=%q\n'          "${EFI_MOUNTPOINT:-/boot}"
-    printf 'GRUB_BOOTLOADER_ID=%q\n'      "${GRUB_BOOTLOADER_ID:-Linux Boot Manager}"
-    printf 'GRUB_TIMEOUT=%q\n'            "${GRUB_TIMEOUT:-0}"
-    printf 'GRUB_TIMEOUT_STYLE=%q\n'      "${GRUB_TIMEOUT_STYLE:-hidden}"
-    printf 'GRUB_DISABLE_OS_PROBER=%q\n'  "${GRUB_DISABLE_OS_PROBER:-true}"
 
     if declare -p PACKAGES >/dev/null 2>&1; then
         declare -p PACKAGES
@@ -85,4 +81,10 @@ _export_config() {
     printf 'SWAP_FILE=%q\n'  "${SWAP_FILE:-}"
     printf 'DISK=%q\n'       "${DISK:-}"
     printf 'HIBERNATE_DELAY=%q\n' "${HIBERNATE_DELAY:-}"
+
+    if declare -p YAY_PACKAGES >/dev/null 2>&1; then
+        declare -p YAY_PACKAGES
+    else
+        printf '%s\n' 'declare -a YAY_PACKAGES=()'
+    fi
 }

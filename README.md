@@ -216,10 +216,6 @@ so full system tools (dconf, systemctl, etc.) are available.
 |--------------------------|-----------------------------------------------------|-----------------------|
 | `BOOTLOADER`             | Bootloader type: `systemd-boot` (default) or `grub` | `systemd-boot`        |
 | `EFI_MOUNTPOINT`         | Where the ESP is mounted                            | `/boot`               |
-| `GRUB_BOOTLOADER_ID`     | EFI firmware boot-menu label (GRUB only)            | `Linux Boot Manager`  |
-| `GRUB_TIMEOUT`           | Seconds before auto-boot (`0` = immediate; GRUB only) | `0`                 |
-| `GRUB_TIMEOUT_STYLE`     | `menu` \| `countdown` \| `hidden` (GRUB only)      | `hidden`              |
-| `GRUB_DISABLE_OS_PROBER` | `true` = skip multi-boot probe (GRUB only)          | `true`                |
 
 **systemd-boot** (default) — silent instant boot, microcode auto-detected,
 swapfile resume offset written to the boot entry automatically.
@@ -229,9 +225,6 @@ To use **GRUB** instead (e.g. for dual-boot):
 ```bash
 BOOTLOADER="grub"
 BOOTLOADER_PACKAGES=("grub" "efibootmgr")        # add "os-prober" for multi-boot
-GRUB_TIMEOUT=5
-GRUB_TIMEOUT_STYLE="menu"
-GRUB_DISABLE_OS_PROBER=false
 ```
 
 ### Services
@@ -259,7 +252,7 @@ of lines while still producing a complete, valid configuration.
 ### `config/default.conf`
 
 Minimal base preset. Contains only what is needed for a functional system.
-All GRUB, NTP, and mirror settings are already at sensible defaults — you
+All NTP, mirror, and bootloader settings are already at sensible defaults — you
 only need to override what differs for your machine.
 
 ### `config/matebook-d16.conf`
