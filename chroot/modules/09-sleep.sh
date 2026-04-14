@@ -10,6 +10,11 @@ chroot_sleep() {
         return
     fi
 
+    if [[ "${SWAP_TYPE:-file}" == "none" ]]; then
+        warn "HIBERNATE_DELAY is set but SWAP_TYPE=none — skipping hibernate configuration (no swap to hibernate to)."
+        return
+    fi
+
     section "Configuring suspend-then-hibernate (delay: ${HIBERNATE_DELAY})"
 
     # -- systemd sleep: set HibernateDelaySec --------------------------------
