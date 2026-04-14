@@ -6,7 +6,7 @@
 #   bash bootstrap.sh [--config /path/to/preset.conf] [--help]
 #
 # Run from the Arch ISO live environment:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/main/bootstrap.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
 # =============================================================================
 set -euo pipefail
 
@@ -15,16 +15,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ---------------------------------------------------------------------------
 # Self-bootstrap: when run via "bash <(curl ...)" the script is fed through a
 # file-descriptor, so SCRIPT_DIR resolves to /dev/fd or similar and sibling
-# files (lib.sh, modules/) are absent.  Clone the repo into a temp directory
-# and re-execute from there so that all relative paths work correctly.
+# files (lib.sh, modules/) are absent.  Download the repository archive into
+# a temp directory and re-execute from there so that all relative paths work
+# correctly.  curl is used instead of git because git may be unavailable in
+# the live environment (e.g., Arch ISO).
 # ---------------------------------------------------------------------------
 _REPO_URL="https://github.com/voqse/arch-bootstrap"
+_REPO_BRANCH="master"
 _CLONE_DIR="/tmp/arch-bootstrap"
 
 if [[ ! -f "${SCRIPT_DIR}/lib.sh" || ! -d "${SCRIPT_DIR}/modules" ]]; then
-    echo "==> Sibling files not found — cloning ${_REPO_URL} into ${_CLONE_DIR} ..."
+    echo "==> Sibling files not found — downloading ${_REPO_URL} into ${_CLONE_DIR} ..."
     rm -rf "${_CLONE_DIR}"
-    git clone --depth=1 "${_REPO_URL}" "${_CLONE_DIR}"
+    mkdir -p "${_CLONE_DIR}"
+    curl -fsSL "${_REPO_URL}/archive/refs/heads/${_REPO_BRANCH}.tar.gz" \
+        | tar -xzf - --strip-components=1 -C "${_CLONE_DIR}"
     exec bash "${_CLONE_DIR}/bootstrap.sh" "$@"
 fi
 
