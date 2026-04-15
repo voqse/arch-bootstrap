@@ -126,3 +126,109 @@ section() {
     echo -e "${BOLD}==> $*${RESET}"
     echo
 }
+
+# =============================================================================
+# mkinitcpio helpers
+# All functions operate on /etc/mkinitcpio.conf by default.
+# Override by setting MKINITCPIO_CONF before sourcing this file.
+# =============================================================================
+MKINITCPIO_CONF="${MKINITCPIO_CONF:-/etc/mkinitcpio.conf}"
+
+# Return 0 if module $1 is present in MODULES=(...).
+mkinitcpio_has_module() {
+    local mod="$1" current
+    current=$(sed -n 's/^MODULES=(\(.*\))/\1/p' "${MKINITCPIO_CONF}" | tr -s ' ')
+    echo " ${current} " | grep -qw "${mod}"
+}
+
+# Add one or more modules to MODULES=(...).
+# Silently skips modules already present.
+# Returns 1 (with a warning) if mkinitcpio.conf does not exist.
+mkinitcpio_add_modules() {
+    if [[ ! -f "${MKINITCPIO_CONF}" ]]; then
+        warn "mkinitcpio_add_modules: ${MKINITCPIO_CONF} not found."
+        return 1
+    fi
+    local current changed=false
+    current=$(sed -n 's/^MODULES=(\(.*\))/\1/p' "${MKINITCPIO_CONF}" | tr -s ' ' | sed 's/^ //;s/ $//')
+    for mod in "$@"; do
+        if ! echo " ${current} " | grep -qw "${mod}"; then
+            current="${current:+${current} }${mod}"
+            changed=true
+            info "mkinitcpio: added module '${mod}'."
+        fi
+    done
+    if [[ "${changed}" == true ]]; then
+        if grep -q '^MODULES=(' "${MKINITCPIO_CONF}"; then
+            if ! sed -i -E "s|^MODULES=\(.*\)|MODULES=(${current})|" "${MKINITCPIO_CONF}"; then
+                warn "mkinitcpio_add_modules: failed to update MODULES in ${MKINITCPIO_CONF}."
+                return 1
+            fi
+        else
+            if ! echo "MODULES=(${current})" >> "${MKINITCPIO_CONF}"; then
+                warn "mkinitcpio_add_modules: failed to append MODULES to ${MKINITCPIO_CONF}."
+                return 1
+            fi
+        fi
+    fi
+}
+
+# Return 0 if hook $1 is present in HOOKS=(...).
+mkinitcpio_has_hook() {
+    local hook="$1"
+    grep -qE "^HOOKS=\([^)]*([[:space:]]|\()${hook}([[:space:]]|\))[^)]*\)" "${MKINITCPIO_CONF}" 2>/dev/null
+}
+
+# Echo the zero-based index of hook $1 in HOOKS=(...), or -1 if absent.
+mkinitcpio_hook_index() {
+    local hook_name="$1" hooks_line hooks_body
+    local -a hooks
+    local i
+    hooks_line=$(grep -m1 '^HOOKS=(' "${MKINITCPIO_CONF}" 2>/dev/null || true)
+    if [[ -z "${hooks_line}" ]]; then echo -1; return 0; fi
+    hooks_body="${hooks_line#HOOKS=(}"
+    hooks_body="${hooks_body%)}"
+    read -r -a hooks <<< "${hooks_body}"
+    for i in "${!hooks[@]}"; do
+        [[ "${hooks[i]}" == "${hook_name}" ]] && echo "${i}" && return 0
+    done
+    echo -1
+}
+
+# Insert <new_hook> immediately after <anchor_hook> in HOOKS=(...).
+# No-op if <new_hook> is already present.
+# Returns 1 (with a warning) if mkinitcpio.conf is missing or anchor not found.
+mkinitcpio_add_hook_after() {
+    local new_hook="$1" anchor="$2"
+    if [[ ! -f "${MKINITCPIO_CONF}" ]]; then
+        warn "mkinitcpio_add_hook_after: ${MKINITCPIO_CONF} not found."
+        return 1
+    fi
+    mkinitcpio_has_hook "${new_hook}" && return 0
+    if ! mkinitcpio_has_hook "${anchor}"; then
+        warn "mkinitcpio_add_hook_after: anchor hook '${anchor}' not found in HOOKS."
+        return 1
+    fi
+    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${anchor} ${new_hook}\2/" "${MKINITCPIO_CONF}" \
+        || { warn "mkinitcpio_add_hook_after: sed failed to update HOOKS in ${MKINITCPIO_CONF}."; return 1; }
+    info "mkinitcpio: added hook '${new_hook}' after '${anchor}'."
+}
+
+# Insert <new_hook> immediately before <anchor_hook> in HOOKS=(...).
+# No-op if <new_hook> is already present.
+# Returns 1 (with a warning) if mkinitcpio.conf is missing or anchor not found.
+mkinitcpio_add_hook_before() {
+    local new_hook="$1" anchor="$2"
+    if [[ ! -f "${MKINITCPIO_CONF}" ]]; then
+        warn "mkinitcpio_add_hook_before: ${MKINITCPIO_CONF} not found."
+        return 1
+    fi
+    mkinitcpio_has_hook "${new_hook}" && return 0
+    if ! mkinitcpio_has_hook "${anchor}"; then
+        warn "mkinitcpio_add_hook_before: anchor hook '${anchor}' not found in HOOKS."
+        return 1
+    fi
+    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${new_hook} ${anchor}\2/" "${MKINITCPIO_CONF}" \
+        || { warn "mkinitcpio_add_hook_before: sed failed to update HOOKS in ${MKINITCPIO_CONF}."; return 1; }
+    info "mkinitcpio: added hook '${new_hook}' before '${anchor}'."
+}

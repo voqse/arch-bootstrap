@@ -19,11 +19,11 @@ chroot_timezone
 chroot_localization
 chroot_hostname
 chroot_network
-chroot_initramfs
 chroot_root_password
 chroot_users
 chroot_bootloader
 chroot_services
 chroot_package_hooks
-chroot_yay
 chroot_sleep
+chroot_initramfs
+chroot_yay

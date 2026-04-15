@@ -2,6 +2,8 @@
 # =============================================================================
 # Chroot module — Systemd service enablement
 # Enables every service listed in the SERVICES config array.
+# Intended for services not tied to a specific package (e.g. built-in systemd
+# timers like fstrim.timer). Package-specific services are enabled in hooks.
 # =============================================================================
 
 chroot_services() {
