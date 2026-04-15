@@ -5,31 +5,27 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Install_essential_packages
 # =============================================================================
 
-# Write vconsole.conf to the given target root.
-# Keep in sync with chroot/modules/02-localization.sh, which rewrites the same
-# file inside the target system during the localization step.
-_write_vconsole_conf() {
+# Write a minimal vconsole.conf fallback to the given target root before
+# pacstrap so that the mkinitcpio sd-vconsole hook can find the file when
+# the linux package is installed.  Only KEYMAP is strictly required; the
+# chroot localization module will overwrite this file with the full config.
+_write_vconsole_fallback() {
     local target_root="$1"
 
     run mkdir -p "${target_root}/etc"
-    {
-        echo "KEYMAP=${KEYMAP}"
-        echo "FONT=${FONT}"
-        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
-        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
-    } > "${target_root}/etc/vconsole.conf"
+    echo "KEYMAP=${KEYMAP}" > "${target_root}/etc/vconsole.conf"
 }
 
 module_pacstrap() {
     section "Package installation (pacstrap)"
 
-    # Write /mnt/etc/vconsole.conf before pacstrap so that the mkinitcpio
-    # sd-vconsole hook can find it when the linux package is installed.
-    # Without this file the hook emits an error and the initramfs image may
-    # be incomplete.  The chroot localization module will overwrite this file
-    # later with the same values.
-    _write_vconsole_conf /mnt
-    info "Pre-wrote /mnt/etc/vconsole.conf (KEYMAP=${KEYMAP}, FONT=${FONT})."
+    # Write a minimal /mnt/etc/vconsole.conf before pacstrap so that the
+    # mkinitcpio sd-vconsole hook can find it when the linux package is
+    # installed.  Without this file the hook emits an error and the initramfs
+    # image may be incomplete.  The chroot localization module will overwrite
+    # this file with the full configuration.
+    _write_vconsole_fallback /mnt
+    info "Pre-wrote /mnt/etc/vconsole.conf fallback (KEYMAP=${KEYMAP})."
 
     local all_packages=()
 
