@@ -71,23 +71,19 @@ while IFS= read -r _res; do
     gresource extract "$_gresource" "$_res" > "$_dst"
 done < <(gresource list "$_gresource")
 
-# Append background-color override to every CSS variant present in the theme.
-# In GNOME Shell 46+ the greeter loads gnome-shell-dark.css / gnome-shell-light.css
-# rather than the legacy gnome-shell.css, so all variants must be patched.
+# Append background-color override to every gnome-shell*.css variant present
+# in the extracted theme.  Any previously injected block is stripped first so
+# repeated runs (e.g. manual invocation or testing) remain idempotent.
 _themedir="${_tmpdir}/org/gnome/shell/theme"
 _css_override="$(printf '\n/* arch-bootstrap: GDM background color */\n#lockDialogGroup { background: %s; }\n' "$_color")"
 
 _patched=0
-for _css in \
-    "$_themedir/gnome-shell.css" \
-    "$_themedir/gnome-shell-dark.css" \
-    "$_themedir/gnome-shell-light.css" \
-    "$_themedir/gnome-shell-high-contrast.css"
-do
-    if [[ -f "$_css" ]]; then
-        printf '%s' "$_css_override" >> "$_css"
-        (( _patched++ )) || true
-    fi
+for _css in "$_themedir"/gnome-shell*.css; do
+    [[ -f "$_css" ]] || continue
+    # Strip any previously injected block to keep the patch idempotent.
+    sed -i '/^\/\* arch-bootstrap: GDM background color \*\//,/^}$/d' "$_css"
+    printf '%s' "$_css_override" >> "$_css"
+    (( _patched++ )) || true
 done
 
 if (( _patched == 0 )); then
