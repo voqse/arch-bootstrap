@@ -177,8 +177,19 @@ if [[ -z "${SWAP_TYPE:-}" ]]; then
         done
     fi
 else
+    case "${SWAP_TYPE,,}" in
+        file|partition|none) SWAP_TYPE="${SWAP_TYPE,,}" ;;
+        *)
+            die "Invalid SWAP_TYPE in preset/config: '${SWAP_TYPE}'. Expected: file, partition, or none."
+            ;;
+    esac
+
     if [[ "${SWAP_TYPE}" != "none" ]]; then
-        info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE:-16G}"
+        SWAP_SIZE="${SWAP_SIZE:-16G}"
+        if [[ ! "${SWAP_SIZE}" =~ ^[1-9][0-9]*[MG]$ ]]; then
+            die "Invalid SWAP_SIZE in preset/config: '${SWAP_SIZE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+        fi
+        info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE}"
     else
         info "Using swap configuration from preset: type=${SWAP_TYPE}"
     fi

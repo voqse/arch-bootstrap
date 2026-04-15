@@ -57,10 +57,11 @@ bash bootstrap.sh --config config/my.conf
 ---
 
 In all scenarios the script will ask for credentials, hostname, and timezone
-interactively before doing anything to the disk. Swap type and size are asked
-only when they are not set in the preset. The script may also prompt for disk
-selection when `DISK` is not set in the preset, and will always ask for
-confirmation before partitioning. When finished:
+interactively before doing anything to the disk. Swap configuration can be
+defined in the preset to skip the interactive prompt. If `SWAP_TYPE` is left
+unset, the script asks for swap settings at runtime. The script may also
+prompt for disk selection when `DISK` is not set in the preset, and will
+always ask for confirmation before partitioning. When finished:
 
 ```bash
 umount -R /mnt
@@ -143,7 +144,7 @@ bash bootstrap.sh --config config/my.conf
 |--------------|--------------------------------------------------------------|---------------|
 | `DISK`       | Device path, e.g. `/dev/nvme0n1`. Empty = prompt            | `""`          |
 | `SWAP_TYPE`  | `file` — swapfile at `/swap/swapfile`; `partition` — dedicated swap partition; `none` — no swap; `""` — prompt at runtime | `""` |
-| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`. Used when `SWAP_TYPE` is not `none` | `16G` (when prompted) |
+| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`. Used when `SWAP_TYPE` is `file` or `partition`; prompted only when swap is being configured interactively | `16G` (when `SWAP_SIZE` is unset) |
 
 Partition layout (GPT / UEFI only):
 
@@ -328,7 +329,7 @@ bash bootstrap.sh --preset station
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone; swap type/size if not set in preset |
+| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone; prompt for swap configuration when `SWAP_TYPE` is not set in preset |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
