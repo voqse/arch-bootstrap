@@ -13,10 +13,7 @@
 #
 # In GNOME Shell 46+ the greeter loads gnome-shell-dark.css or
 # gnome-shell-light.css instead of the legacy gnome-shell.css, so all CSS
-# variants present in the gresource are patched.  The original gresource is
-# saved as gnome-shell-theme.gresource.default on first run so that
-# subsequent invocations (pacman hook after upgrades) always start from a
-# clean baseline.
+# variants present in the gresource are patched.
 #
 # Ref: https://wiki.archlinux.org/title/GDM#Installation
 
@@ -58,19 +55,11 @@ set -euo pipefail
 
 _color='#152131'
 _gresource='/usr/share/gnome-shell/gnome-shell-theme.gresource'
-_gresource_default="${_gresource}.default"
-
-# Keep an unmodified copy of the original gresource so that repeated runs
-# (e.g. after a gnome-shell upgrade that restores the file) always start from
-# a clean baseline instead of stacking overrides on an already-patched file.
-if [[ ! -f "$_gresource_default" ]]; then
-    cp "$_gresource" "$_gresource_default"
-fi
 
 _tmpdir=$(mktemp -d)
 trap 'rm -rf "$_tmpdir"' EXIT INT TERM
 
-# Extract every resource from the ORIGINAL (unmodified) gresource.
+# Extract every resource, preserving the full path under $_tmpdir.
 # Validate each resource path to guard against directory traversal.
 while IFS= read -r _res; do
     if [[ "$_res" == *..* ]]; then
@@ -79,8 +68,8 @@ while IFS= read -r _res; do
     fi
     _dst="${_tmpdir}${_res}"
     mkdir -p "$(dirname "$_dst")"
-    gresource extract "$_gresource_default" "$_res" > "$_dst"
-done < <(gresource list "$_gresource_default")
+    gresource extract "$_gresource" "$_res" > "$_dst"
+done < <(gresource list "$_gresource")
 
 # Append background-color override to every CSS variant present in the theme.
 # In GNOME Shell 46+ the greeter loads gnome-shell-dark.css / gnome-shell-light.css
