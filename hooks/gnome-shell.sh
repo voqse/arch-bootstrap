@@ -56,6 +56,7 @@ if [[ ! -f /etc/dconf/profile/gdm ]]; then
     cat > /etc/dconf/profile/gdm <<'EOF'
 user-db:user
 system-db:gdm
+file-db:/usr/share/gdm/greeter-dconf-defaults
 EOF
 fi
 
