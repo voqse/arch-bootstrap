@@ -25,8 +25,35 @@ module_chroot() (
 
     chmod +x "${chroot_dir}/configure.sh"
 
+    # arch-chroot bind-mounts the host's /run inside the chroot.  When
+    # mkinitcpio -P runs inside the chroot (after the plymouth hook is added),
+    # tmpfiles rules or post-hooks from the target's mkinitcpio can write new
+    # content—including the plymouth hook—into the host's
+    # /run/initramfs/mkinitcpio-shutdown.conf.  At host shutdown the
+    # mkinitcpio-generate-shutdown-ramfs.service reads that file, calls
+    # Plymouth's build() -> plymouth-set-default-theme (Python), and fails
+    # under MemoryDenyWriteExecute=yes.  Preserve and restore the file so the
+    # host's shutdown behaviour is unaffected by the installation.
+    local _shutdown_conf="/run/initramfs/mkinitcpio-shutdown.conf"
+    local _shutdown_conf_backup
+    _shutdown_conf_backup="$(mktemp /tmp/mkinitcpio-shutdown-conf.XXXXXX 2>/dev/null || echo "")"
+    local _shutdown_conf_existed=false
+    if [[ -f "${_shutdown_conf}" ]]; then
+        _shutdown_conf_existed=true
+        [[ -n "${_shutdown_conf_backup}" ]] && cp -- "${_shutdown_conf}" "${_shutdown_conf_backup}"
+    fi
+
     info "Entering chroot..."
     run arch-chroot /mnt /root/arch-bootstrap-chroot/configure.sh
+
+    # Restore /run/initramfs/mkinitcpio-shutdown.conf to the state it was in
+    # before the chroot so the host's shutdown ramfs service works correctly.
+    if [[ "${_shutdown_conf_existed}" == true && -n "${_shutdown_conf_backup}" && -f "${_shutdown_conf_backup}" ]]; then
+        cp -- "${_shutdown_conf_backup}" "${_shutdown_conf}"
+    elif [[ "${_shutdown_conf_existed}" == false && -f "${_shutdown_conf}" ]]; then
+        rm -f -- "${_shutdown_conf}"
+    fi
+    [[ -n "${_shutdown_conf_backup}" ]] && rm -f -- "${_shutdown_conf_backup}"
 
     success "Chroot configuration complete."
 )
