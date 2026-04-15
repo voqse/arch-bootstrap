@@ -5,8 +5,9 @@ the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/In
 
 Preset files define the target machine's packages, services, and other
 non-secret settings. Credentials (username, user password, root password),
-hostname, timezone, and swap configuration are always collected interactively
-at the start of the run and are never stored in preset files.
+hostname, and timezone are always collected interactively at the start of the
+run and are never stored in preset files. Swap configuration may be defined in
+a preset to skip the interactive prompt, or left unset to be asked at runtime.
 
 ---
 
@@ -55,10 +56,11 @@ bash bootstrap.sh --config config/my.conf
 
 ---
 
-In all scenarios the script will ask for credentials, hostname, timezone, and
-swap configuration interactively before doing anything to the disk. It may also
-prompt for disk selection when `DISK` is not set in the preset, and will always
-ask for confirmation before partitioning. When finished:
+In all scenarios the script will ask for credentials, hostname, and timezone
+interactively before doing anything to the disk. Swap type and size are asked
+only when they are not set in the preset. The script may also prompt for disk
+selection when `DISK` is not set in the preset, and will always ask for
+confirmation before partitioning. When finished:
 
 ```bash
 umount -R /mnt
@@ -140,8 +142,8 @@ bash bootstrap.sh --config config/my.conf
 | Variable     | Description                                                  | Default       |
 |--------------|--------------------------------------------------------------|---------------|
 | `DISK`       | Device path, e.g. `/dev/nvme0n1`. Empty = prompt            | `""`          |
-| `SWAP_TYPE`  | `file` — swapfile at `/swap/swapfile`; `partition` — dedicated swap partition; `none` — no swap | `file` |
-| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`                            | `16G`         |
+| `SWAP_TYPE`  | `file` — swapfile at `/swap/swapfile`; `partition` — dedicated swap partition; `none` — no swap; `""` — prompt at runtime | `""` |
+| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`. Used when `SWAP_TYPE` is not `none` | `16G` (when prompted) |
 
 Partition layout (GPT / UEFI only):
 
@@ -168,9 +170,11 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials, hostname, timezone, and swap configuration are not in preset files.**
-> Username, user password, root password, hostname, timezone, and swap configuration
-> are asked interactively at the very beginning of the installation run.
+> **Credentials, hostname, and timezone are not in preset files.**
+> Username, user password, root password, hostname, and timezone are asked
+> interactively at the very beginning of the installation run.
+> Swap type and size may be set in a preset to skip the interactive prompt;
+> when left unset, they are asked at runtime.
 
 ### Packages
 
@@ -324,7 +328,7 @@ bash bootstrap.sh --preset station
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone, swap type/size |
+| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone; swap type/size if not set in preset |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
