@@ -9,17 +9,22 @@
 chroot_initramfs() {
     section "Initramfs"
 
-    # Insert the correct Plymouth hook depending on the initramfs type:
-    # - systemd-based initramfs: sd-plymouth must come after the 'systemd' hook.
-    # - busybox/udev-based initramfs (Arch default): plymouth must come after 'udev'.
+    # Insert the 'plymouth' hook into the HOOKS array.
+    # The hook name is always 'plymouth' regardless of the initramfs type.
+    # Placement requirement from the Arch Wiki:
+    #   - If the 'systemd' hook is present it must appear before 'plymouth'.
+    #   - If the legacy 'udev' hook is present, insert after it.
+    # Default Arch mkinitcpio.conf uses the systemd-based initramfs.
     # Ref: https://wiki.archlinux.org/title/Plymouth#mkinitcpio
     if _has_package "plymouth"; then
         if _hooks_contain systemd; then
-            info "Adding sd-plymouth hook after 'systemd' (systemd-based initramfs)..."
-            sed -i '/^HOOKS=/{ /\<sd-plymouth\>/! s/\<systemd\>/systemd sd-plymouth/; }' /etc/mkinitcpio.conf
-        else
-            info "Adding plymouth hook after 'udev' (udev-based initramfs)..."
+            info "Adding plymouth hook after 'systemd'..."
+            sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<systemd\>/systemd plymouth/; }' /etc/mkinitcpio.conf
+        elif _hooks_contain udev; then
+            info "Adding plymouth hook after 'udev'..."
             sed -i '/^HOOKS=/{ /\<plymouth\>/! s/\<udev\>/udev plymouth/; }' /etc/mkinitcpio.conf
+        else
+            warn "Neither 'systemd' nor 'udev' hook found in mkinitcpio HOOKS; skipping plymouth insertion."
         fi
     fi
 
