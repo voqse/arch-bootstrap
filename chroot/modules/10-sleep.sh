@@ -36,8 +36,10 @@ EOF
     elif mkinitcpio_has_hook resume; then
         info "mkinitcpio: 'resume' hook already present."
     else
-        mkinitcpio_add_hook_before resume filesystems
-        run mkinitcpio -P
+        if ! mkinitcpio_add_hook_before resume filesystems; then
+            warn "mkinitcpio: failed to add 'resume' hook before 'filesystems'; skipping hibernate configuration."
+            return 1
+        fi
     fi
 
     # -- logind: lid-close on battery → suspend-then-hibernate; lid-close on AC → lock only

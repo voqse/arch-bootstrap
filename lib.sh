@@ -203,7 +203,8 @@ mkinitcpio_add_hook_after() {
         warn "mkinitcpio_add_hook_after: anchor hook '${anchor}' not found in HOOKS."
         return 1
     fi
-    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${anchor} ${new_hook}\2/" "${MKINITCPIO_CONF}"
+    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${anchor} ${new_hook}\2/" "${MKINITCPIO_CONF}" \
+        || { warn "mkinitcpio_add_hook_after: sed failed to update HOOKS in ${MKINITCPIO_CONF}."; return 1; }
     info "mkinitcpio: added hook '${new_hook}' after '${anchor}'."
 }
 
@@ -221,6 +222,7 @@ mkinitcpio_add_hook_before() {
         warn "mkinitcpio_add_hook_before: anchor hook '${anchor}' not found in HOOKS."
         return 1
     fi
-    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${new_hook} ${anchor}\2/" "${MKINITCPIO_CONF}"
+    sed -E -i "/^HOOKS=/s/([[:space:](])${anchor}([[:space:])])/\1${new_hook} ${anchor}\2/" "${MKINITCPIO_CONF}" \
+        || { warn "mkinitcpio_add_hook_before: sed failed to update HOOKS in ${MKINITCPIO_CONF}."; return 1; }
     info "mkinitcpio: added hook '${new_hook}' before '${anchor}'."
 }
