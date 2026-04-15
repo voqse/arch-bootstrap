@@ -19,3 +19,7 @@ if [[ -n "${INSTALL_USERNAME:-}" ]]; then
         echo "Warning: docker group not found — skipping docker usermod for '${INSTALL_USERNAME}'." >&2
     fi
 fi
+
+# Enable socket-activated Docker daemon.
+# Ref: https://wiki.archlinux.org/title/Docker#Installation
+systemctl enable docker.socket

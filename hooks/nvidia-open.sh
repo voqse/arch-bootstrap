@@ -39,9 +39,6 @@ if [[ "${_needs_update}" == true ]]; then
     done
     sed -i -E "s|^MODULES=\(.*\)|MODULES=(${_current})|" "${_conf}"
     echo "==> nvidia-open: added NVIDIA modules to mkinitcpio MODULES for early loading."
-
-    # Regenerate initramfs so the new MODULES list takes effect.
-    mkinitcpio -P
 else
     echo "==> nvidia-open: mkinitcpio MODULES already configured; skipping initramfs regeneration."
 fi

@@ -4,3 +4,4 @@
 ufw default deny incoming
 ufw default allow outgoing
 ufw --force enable
+systemctl enable ufw
