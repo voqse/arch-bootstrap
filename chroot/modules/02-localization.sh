@@ -29,8 +29,15 @@ chroot_localization() {
     echo "LANG=${LANG}" > /etc/locale.conf
     success "LANG=${LANG} written to /etc/locale.conf."
 
-    # /etc/vconsole.conf was pre-written by the pacstrap module before package
-    # installation so that the mkinitcpio sd-vconsole hook could find it when
-    # the linux package was installed.  Nothing to do here.
-    success "vconsole.conf: KEYMAP=${KEYMAP}, FONT=${FONT}${XKBLAYOUT:+, XKBLAYOUT=${XKBLAYOUT}} (pre-written by pacstrap step)."
+    # /etc/vconsole.conf — authoritative write; overwrites the minimal fallback
+    # that was created by the pacstrap module before package installation.
+    {
+        echo "KEYMAP=${KEYMAP}"
+        echo "FONT=${FONT}"
+        # GDM (and Xorg/Wayland sessions) use XKBLAYOUT, not KEYMAP.
+        # Ref: https://wiki.archlinux.org/title/GDM#Keyboard_layout
+        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
+        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
+    } > /etc/vconsole.conf
+    success "vconsole.conf: KEYMAP=${KEYMAP}, FONT=${FONT}${XKBLAYOUT:+, XKBLAYOUT=${XKBLAYOUT}}."
 }
