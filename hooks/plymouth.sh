@@ -33,13 +33,13 @@ fi
 
 if _hooks_contain kms; then
     echo "==> plymouth: adding plymouth hook after 'kms'..."
-    sed -i '/^HOOKS=/s/\bkms\b/kms plymouth/' "${_conf}"
+    sed -E -i '/^HOOKS=/s/([[:space:](])kms([[:space:])])/\1kms plymouth\2/' "${_conf}"
 elif _hooks_contain systemd; then
     echo "==> plymouth: adding plymouth hook after 'systemd'..."
-    sed -i '/^HOOKS=/s/\bsystemd\b/systemd plymouth/' "${_conf}"
+    sed -E -i '/^HOOKS=/s/([[:space:](])systemd([[:space:])])/\1systemd plymouth\2/' "${_conf}"
 elif _hooks_contain udev; then
     echo "==> plymouth: adding plymouth hook after 'udev'..."
-    sed -i '/^HOOKS=/s/\budev\b/udev plymouth/' "${_conf}"
+    sed -E -i '/^HOOKS=/s/([[:space:](])udev([[:space:])])/\1udev plymouth\2/' "${_conf}"
 else
     echo "plymouth hook: neither 'kms', 'systemd', nor 'udev' found in HOOKS; skipping." >&2
     exit 0
