@@ -160,9 +160,15 @@ mkinitcpio_add_modules() {
     done
     if [[ "${changed}" == true ]]; then
         if grep -q '^MODULES=(' "${MKINITCPIO_CONF}"; then
-            sed -i -E "s|^MODULES=\(.*\)|MODULES=(${current})|" "${MKINITCPIO_CONF}"
+            if ! sed -i -E "s|^MODULES=\(.*\)|MODULES=(${current})|" "${MKINITCPIO_CONF}"; then
+                warn "mkinitcpio_add_modules: failed to update MODULES in ${MKINITCPIO_CONF}."
+                return 1
+            fi
         else
-            echo "MODULES=(${current})" >> "${MKINITCPIO_CONF}"
+            if ! echo "MODULES=(${current})" >> "${MKINITCPIO_CONF}"; then
+                warn "mkinitcpio_add_modules: failed to append MODULES to ${MKINITCPIO_CONF}."
+                return 1
+            fi
         fi
     fi
 }
