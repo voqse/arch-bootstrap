@@ -46,6 +46,8 @@ _export_config() {
     printf 'LANG=%q\n'             "${LANG}"
     printf 'KEYMAP=%q\n'           "${KEYMAP}"
     printf 'FONT=%q\n'             "${FONT}"
+    printf 'XKBLAYOUT=%q\n'        "${XKBLAYOUT:-}"
+    printf 'XKBOPTIONS=%q\n'       "${XKBOPTIONS:-}"
     printf 'TIMEZONE=%q\n'         "${TIMEZONE}"
     printf 'HOSTNAME=%q\n'         "${HOSTNAME}"
     printf 'INSTALL_USERNAME=%q\n' "${INSTALL_USERNAME:-}"
@@ -59,7 +61,6 @@ _export_config() {
         printf '%s\n' 'declare -a USERS=()'
     fi
 
-    printf 'BOOTLOADER=%q\n'              "${BOOTLOADER:-systemd-boot}"
     printf 'EFI_MOUNTPOINT=%q\n'          "${EFI_MOUNTPOINT:-/boot}"
 
     if declare -p PACKAGES >/dev/null 2>&1; then

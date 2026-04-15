@@ -33,6 +33,10 @@ chroot_localization() {
     {
         echo "KEYMAP=${KEYMAP}"
         echo "FONT=${FONT}"
+        # GDM (and Xorg/Wayland sessions) use XKBLAYOUT, not KEYMAP.
+        # Ref: https://wiki.archlinux.org/title/GDM#Keyboard_layout
+        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
+        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
     } > /etc/vconsole.conf
-    success "vconsole.conf: KEYMAP=${KEYMAP}, FONT=${FONT}."
+    success "vconsole.conf: KEYMAP=${KEYMAP}, FONT=${FONT}${XKBLAYOUT:+, XKBLAYOUT=${XKBLAYOUT}}."
 }
