@@ -51,7 +51,6 @@ _export_config() {
     printf 'TIMEZONE=%q\n'         "${TIMEZONE}"
     printf 'HOSTNAME=%q\n'         "${HOSTNAME}"
     printf 'INSTALL_USERNAME=%q\n' "${INSTALL_USERNAME:-}"
-    printf 'INSTALL_USER_GROUPS=%q\n' "${INSTALL_USER_GROUPS:-}"
     printf 'INSTALL_USER_PASSWORD=%q\n' "${INSTALL_USER_PASSWORD:-}"
     printf 'ROOT_PASSWORD=%q\n'    "${ROOT_PASSWORD:-}"
 

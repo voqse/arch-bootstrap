@@ -3,10 +3,10 @@
 Modular, config-driven Arch Linux installation script that strictly follows
 the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide).
 
-Preset files define the target machine's packages, hostname, and
-services. Credentials (username, user password, root password) and
-timezone are always collected interactively at the start of the run
-and are never stored in preset files.
+Preset files define the target machine's packages, services, and other
+non-secret settings. Credentials (username, user password, root password),
+hostname, timezone, and swap configuration are always collected interactively
+at the start of the run and are never stored in preset files.
 
 ---
 
@@ -168,9 +168,9 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials, hostname, and timezone are not in preset files.**
-> Username, user password, root password, hostname, and timezone are asked interactively at
-> the very beginning of the installation run.
+> **Credentials, hostname, timezone, and swap configuration are not in preset files.**
+> Username, user password, root password, hostname, timezone, and swap configuration
+> are asked interactively at the very beginning of the installation run.
 
 ### Packages
 
@@ -324,7 +324,7 @@ bash bootstrap.sh --preset station
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Ask username, supplementary groups, passwords, hostname, timezone, swap type/size |
+| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone, swap type/size |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
