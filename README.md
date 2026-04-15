@@ -3,10 +3,10 @@
 Modular, config-driven Arch Linux installation script that strictly follows
 the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide).
 
-Preset files define the target machine's packages, hostname, and
-services. Credentials (username, user password, root password) and
-timezone are always collected interactively at the start of the run
-and are never stored in preset files.
+Preset files define the target machine's packages, services, and other
+non-secret settings. Credentials (username, user password, root password),
+hostname, timezone, and swap configuration are always collected interactively
+at the start of the run and are never stored in preset files.
 
 ---
 
@@ -55,10 +55,10 @@ bash bootstrap.sh --config config/my.conf
 
 ---
 
-In all scenarios the script will ask for credentials, hostname, and timezone
-interactively before doing anything to the disk. It may also prompt for
-disk selection when `DISK` is not set in the preset, and will always ask
-for confirmation before partitioning. When finished:
+In all scenarios the script will ask for credentials, hostname, timezone, and
+swap configuration interactively before doing anything to the disk. It may also
+prompt for disk selection when `DISK` is not set in the preset, and will always
+ask for confirmation before partitioning. When finished:
 
 ```bash
 umount -R /mnt
@@ -97,9 +97,12 @@ arch-bootstrap/
 │       ├── 05-users.sh       # Root password + user accounts + sudoers
 │       ├── 06-bootloader.sh  # systemd-boot install + config
 │       ├── 07-services.sh    # systemctl enable for SERVICES array
-│       └── 08-hooks.sh       # Per-package configuration scripts
+│       ├── 08-hooks.sh       # Per-package configuration scripts
+│       ├── 09-yay.sh         # AUR helper (yay) + YAY_PACKAGES install
+│       └── 10-sleep.sh       # Suspend-then-hibernate configuration
 │
 └── hooks/                    # Per-package configuration scripts
+    ├── docker.sh             # Adds install user to the docker group
     ├── gnome-shell.sh        # GNOME appearance — solid black background
     ├── networkmanager.sh     # Enable NetworkManager (legacy compatibility)
     ├── nvidia-open.sh        # NVIDIA early KMS — adds modules to mkinitcpio
@@ -119,12 +122,14 @@ bash bootstrap.sh --config config/my.conf
 
 ### Localization
 
-| Variable  | Description                          | Default                          |
-|-----------|--------------------------------------|----------------------------------|
-| `LOCALES` | Locales to uncomment in `locale.gen` | `("en_US.UTF-8" "ru_RU.UTF-8")` |
-| `LANG`    | System-wide language (`LANG=`)       | `en_US.UTF-8`                    |
-| `KEYMAP`  | Console keymap (`vconsole.conf`)     | `ruwin_alt_sh-UTF-8`             |
-| `FONT`    | Console font (`vconsole.conf`)       | `cyr-sun16`                      |
+| Variable      | Description                          | Default                          |
+|---------------|--------------------------------------|----------------------------------|
+| `LOCALES`     | Locales to uncomment in `locale.gen` | `("en_US.UTF-8" "ru_RU.UTF-8")` |
+| `LANG`        | System-wide language (`LANG=`)       | `en_US.UTF-8`                    |
+| `KEYMAP`      | Console keymap (`vconsole.conf`)     | `ruwin_alt_sh-UTF-8`             |
+| `FONT`        | Console font (`vconsole.conf`)       | `cyr-sun16`                      |
+| `XKBLAYOUT`   | X11/Wayland keyboard layout (used by GDM) | `us,ru`                    |
+| `XKBOPTIONS`  | X11/Wayland keyboard options         | `grp:alt_shift_toggle`           |
 
 > **Timezone is not a preset value.**
 > It is always prompted interactively at the start of each run.
@@ -144,7 +149,7 @@ Partition layout (GPT / UEFI only):
 
 | # | Size      | Type                 | Filesystem |
 |---|-----------|----------------------|------------|
-| 1 | 512 MiB   | EFI System Partition | FAT32      |
+| 1 | 1024 MiB  | EFI System Partition | FAT32      |
 | 2 | remainder | Linux filesystem     | ext4       |
 
 Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
@@ -153,7 +158,7 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 
 | # | Size        | Type                 | Filesystem |
 |---|-------------|----------------------|------------|
-| 1 | 512 MiB     | EFI System Partition | FAT32      |
+| 1 | 1024 MiB    | EFI System Partition | FAT32      |
 | 2 | `SWAP_SIZE` | Linux swap           | swap       |
 | 3 | remainder   | Linux filesystem     | ext4       |
 
@@ -163,18 +168,20 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 |------------|------------------|--------------|
 | `HOSTNAME` | Machine hostname | `archlinux`  |
 
-> **Credentials, hostname, and timezone are not in preset files.**
-> Username, user password, root password, hostname, and timezone are asked interactively at
-> the very beginning of the installation run.
+> **Credentials, hostname, timezone, and swap configuration are not in preset files.**
+> Username, user password, root password, hostname, timezone, and swap configuration
+> are asked interactively at the very beginning of the installation run.
 
 ### Packages
 
 ```bash
 BASE_PACKAGES=(       # Passed to pacstrap first; always installed
     "base"
+    "base-devel"
     "linux"
     "linux-firmware"
-    "amd-ucode"       # add for AMD CPUs
+    # "amd-ucode"     # add for AMD CPUs (via BASE_PACKAGES+=)
+    # "intel-ucode"   # add for Intel CPUs (via BASE_PACKAGES+=)
 )
 
 PACKAGES=(            # Additional packages; optionally with a config hook
@@ -233,7 +240,9 @@ SERVICES=(
     "bluetooth"
     "gdm"
     "fstrim.timer"
+    "fwupd-refresh.timer"
     "ufw"
+    "docker.socket"
 )
 ```
 
@@ -315,7 +324,7 @@ bash bootstrap.sh --preset station
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Ask username, user password, root password |
+| 0 | bootstrap.sh | Ask username, passwords, hostname, timezone, swap type/size |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
@@ -330,3 +339,5 @@ bash bootstrap.sh --preset station
 | — | (chroot) bootloader | systemd-boot install + config |
 | — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
 | — | (chroot) hooks | Per-package configuration scripts from `hooks/` |
+| — | (chroot) yay | Build + install `yay`; install `YAY_PACKAGES` from the AUR |
+| — | (chroot) sleep | Suspend-then-hibernate via `HIBERNATE_DELAY` (skipped if unset) |

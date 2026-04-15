@@ -29,9 +29,11 @@ chroot_users() {
 
     local created=0
 
-    # Main user — collected interactively before installation
+    # Main user — collected interactively before installation; always placed in
+    # wheel (grants sudo).  Additional groups are added by package hooks when
+    # the corresponding hardware/service requires it (e.g. docker.sh → docker).
     if [[ -n "${INSTALL_USERNAME:-}" ]]; then
-        _create_user "${INSTALL_USERNAME}" "${INSTALL_USER_GROUPS:-}" "${INSTALL_USER_PASSWORD:-}"
+        _create_user "${INSTALL_USERNAME}" "wheel" "${INSTALL_USER_PASSWORD:-}"
         created=$((created + 1))
     fi
 
