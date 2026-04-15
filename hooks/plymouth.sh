@@ -76,6 +76,3 @@ else
     echo "plymouth hook: neither 'kms', 'systemd', nor 'udev' found in HOOKS; skipping." >&2
     exit 0
 fi
-
-echo "==> plymouth: regenerating initramfs..."
-mkinitcpio -P

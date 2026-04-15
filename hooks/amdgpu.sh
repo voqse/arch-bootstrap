@@ -24,8 +24,5 @@ else
     _current="${_current:+${_current} }amdgpu"
     sed -i -E "s|^MODULES=\(.*\)|MODULES=(${_current})|" "${_conf}"
     echo "==> amdgpu: added amdgpu to mkinitcpio MODULES for early KMS."
-
-    # Regenerate initramfs so the new MODULES list takes effect.
-    mkinitcpio -P
 fi
 unset _current
