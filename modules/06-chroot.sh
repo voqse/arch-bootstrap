@@ -35,12 +35,18 @@ module_chroot() (
     # under MemoryDenyWriteExecute=yes.  Preserve and restore the file so the
     # host's shutdown behaviour is unaffected by the installation.
     local _shutdown_conf="/run/initramfs/mkinitcpio-shutdown.conf"
-    local _shutdown_conf_backup
-    _shutdown_conf_backup="$(mktemp /tmp/mkinitcpio-shutdown-conf.XXXXXX 2>/dev/null || echo "")"
+    local _shutdown_conf_backup=""
     local _shutdown_conf_existed=false
     if [[ -f "${_shutdown_conf}" ]]; then
         _shutdown_conf_existed=true
-        [[ -n "${_shutdown_conf_backup}" ]] && cp -- "${_shutdown_conf}" "${_shutdown_conf_backup}"
+        _shutdown_conf_backup="$(mktemp -p /run mkinitcpio-shutdown-conf.XXXXXX 2>/dev/null || true)"
+        if [[ -n "${_shutdown_conf_backup}" ]]; then
+            chmod 600 -- "${_shutdown_conf_backup}"
+            cp -- "${_shutdown_conf}" "${_shutdown_conf_backup}" || {
+                rm -f -- "${_shutdown_conf_backup}"
+                _shutdown_conf_backup=""
+            }
+        fi
     fi
 
     info "Entering chroot..."
@@ -48,9 +54,12 @@ module_chroot() (
 
     # Restore /run/initramfs/mkinitcpio-shutdown.conf to the state it was in
     # before the chroot so the host's shutdown ramfs service works correctly.
-    if [[ "${_shutdown_conf_existed}" == true && -n "${_shutdown_conf_backup}" && -f "${_shutdown_conf_backup}" ]]; then
-        cp -- "${_shutdown_conf_backup}" "${_shutdown_conf}"
-    elif [[ "${_shutdown_conf_existed}" == false && -f "${_shutdown_conf}" ]]; then
+    if [[ "${_shutdown_conf_existed}" == true ]]; then
+        if [[ -n "${_shutdown_conf_backup}" && -f "${_shutdown_conf_backup}" ]]; then
+            cp -- "${_shutdown_conf_backup}" "${_shutdown_conf}"
+        fi
+        # If backup was not available, leave the file as-is.
+    elif [[ -f "${_shutdown_conf}" ]]; then
         rm -f -- "${_shutdown_conf}"
     fi
     [[ -n "${_shutdown_conf_backup}" ]] && rm -f -- "${_shutdown_conf_backup}"
