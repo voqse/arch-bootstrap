@@ -177,7 +177,11 @@ if [[ -z "${SWAP_TYPE:-}" ]]; then
         done
     fi
 else
-    info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE:-default}"
+    if [[ "${SWAP_TYPE}" != "none" ]]; then
+        info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE:-16G}"
+    else
+        info "Using swap configuration from preset: type=${SWAP_TYPE}"
+    fi
 fi
 
 # ---------------------------------------------------------------------------
