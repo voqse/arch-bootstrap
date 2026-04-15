@@ -169,8 +169,8 @@ if [[ -z "${SWAP_TYPE:-}" ]]; then
     if [[ "${SWAP_TYPE}" != "none" ]]; then
         while true; do
             ask_value "Swap size"
-            if [[ "${REPLY}" =~ ^[1-9][0-9]*[MG]$ ]]; then
-                SWAP_SIZE="${REPLY}"
+            if [[ "${REPLY}" =~ ^[1-9][0-9]*[MmGg]$ ]]; then
+                SWAP_SIZE="${REPLY^^}"
                 break
             fi
             warn "Invalid swap size. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
@@ -188,9 +188,10 @@ else
         if [[ -z "${SWAP_SIZE}" ]]; then
             die "SWAP_SIZE must be set in preset/config when SWAP_TYPE is '${SWAP_TYPE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
         fi
-        if [[ ! "${SWAP_SIZE}" =~ ^[1-9][0-9]*[MG]$ ]]; then
+        if [[ ! "${SWAP_SIZE}" =~ ^[1-9][0-9]*[MmGg]$ ]]; then
             die "Invalid SWAP_SIZE in preset/config: '${SWAP_SIZE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
         fi
+        SWAP_SIZE="${SWAP_SIZE^^}"
         info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE}"
     else
         info "Using swap configuration from preset: type=${SWAP_TYPE}"
