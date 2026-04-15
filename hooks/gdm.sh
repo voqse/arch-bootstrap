@@ -2,7 +2,7 @@
 # Hook: gdm
 # Enables the GNOME Display Manager (login screen / session launcher) and
 # configures it via dconf:
-#   - Solid #000000 (black) desktop background and screensaver
+#   - Solid #152131 desktop background and screensaver
 #   - No distribution logo on the login screen
 # Ref: https://wiki.archlinux.org/title/GDM#Installation
 
@@ -23,14 +23,14 @@ mkdir -p /etc/dconf/db/gdm.d
 cat > /etc/dconf/db/gdm.d/00-background <<'EOF'
 [org/gnome/desktop/background]
 picture-options='none'
-primary-color='#000000'
+primary-color='#152131'
 color-shading-type='solid'
 picture-uri=''
 picture-uri-dark=''
 
 [org/gnome/desktop/screensaver]
 picture-options='none'
-primary-color='#000000'
+primary-color='#152131'
 color-shading-type='solid'
 picture-uri=''
 
