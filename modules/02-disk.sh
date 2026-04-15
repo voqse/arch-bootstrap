@@ -107,7 +107,7 @@ _partition_disk() {
 # Convert SWAP_SIZE (e.g. "16G", "4096M") to a parted-compatible end position
 # starting from 1025MiB.
 _swap_end() {
-    local size="${SWAP_SIZE:-16G}"
+    local size="${SWAP_SIZE}"
     local num="${size%[GgMm]}"
     local unit="${size: -1}"
 
@@ -195,7 +195,7 @@ _mount_partitions() {
 }
 
 _create_swapfile() {
-    local swap_size="${SWAP_SIZE:-16G}"
+    local swap_size="${SWAP_SIZE}"
     local swap_path="/mnt/swap/swapfile"
 
     info "Creating swapfile (${swap_size}) at ${swap_path}..."
