@@ -24,6 +24,6 @@ chroot_users
 chroot_bootloader
 chroot_services
 chroot_package_hooks
+chroot_sleep
 chroot_initramfs
 chroot_yay
-chroot_sleep
