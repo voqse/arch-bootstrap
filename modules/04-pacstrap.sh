@@ -8,6 +8,25 @@
 module_pacstrap() {
     section "Package installation (pacstrap)"
 
+    # Write /mnt/etc/vconsole.conf before pacstrap so that the mkinitcpio
+    # sd-vconsole hook can find it when the linux package is installed.
+    # Without this file the hook emits an error and the initramfs image may
+    # be incomplete.  The chroot localization module will overwrite this file
+    # later with the same values.
+    run mkdir -p /mnt/etc
+    {
+        echo "KEYMAP=${KEYMAP}"
+        echo "FONT=${FONT}"
+        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
+        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
+    } > /mnt/etc/vconsole.conf
+    info "Pre-wrote /mnt/etc/vconsole.conf (KEYMAP=${KEYMAP}, FONT=${FONT})."
+
+    # Write /mnt/etc/locale.conf so that perl-based pacman hooks do not emit
+    # locale warnings during installation.
+    echo "LANG=${LANG}" > /mnt/etc/locale.conf
+    info "Pre-wrote /mnt/etc/locale.conf (LANG=${LANG})."
+
     local all_packages=()
 
     # Base packages (always installed)
