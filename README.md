@@ -144,7 +144,7 @@ Partition layout (GPT / UEFI only):
 
 | # | Size      | Type                 | Filesystem |
 |---|-----------|----------------------|------------|
-| 1 | 512 MiB   | EFI System Partition | FAT32      |
+| 1 | 1024 MiB  | EFI System Partition | FAT32      |
 | 2 | remainder | Linux filesystem     | ext4       |
 
 Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
@@ -153,7 +153,7 @@ Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
 
 | # | Size        | Type                 | Filesystem |
 |---|-------------|----------------------|------------|
-| 1 | 512 MiB     | EFI System Partition | FAT32      |
+| 1 | 1024 MiB    | EFI System Partition | FAT32      |
 | 2 | `SWAP_SIZE` | Linux swap           | swap       |
 | 3 | remainder   | Linux filesystem     | ext4       |
 
