@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Hook: plymouth
 # Inserts the 'plymouth' hook into mkinitcpio HOOKS so that the Plymouth
-# splash screen is shown on early boot.
+# splash screen is shown on early boot, and sets the theme to 'spinner'
+# (a clean spinner with no distribution logo).
 #
 # Placement rules (Arch Wiki):
 #   - 'plymouth' must come after 'kms' (KMS must be initialised first).
@@ -15,6 +16,12 @@
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${HOOK_DIR}/../lib.sh"
+
+# Set the spinner theme (clean splash with no distribution logo).
+# 'spinner' is bundled with the plymouth package, so it is always available.
+# Run unconditionally so the theme is applied even when the mkinitcpio hook
+# was already inserted by a previous run.
+plymouth-set-default-theme spinner
 
 if mkinitcpio_has_hook plymouth; then
     exit 0

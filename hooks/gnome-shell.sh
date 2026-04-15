@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hook: gnome-shell
 # Configures GNOME Shell via system-wide dconf overrides:
-#   - Solid #000000 (black) desktop background for user sessions and GDM
+#   - Solid #000000 (black) desktop background for user sessions
 #   - Enables AppIndicator tray icon extension
 #   - Custom keyboard shortcuts: Ctrl+Alt+T (terminal), Ctrl+Shift+Esc (btop)
 
@@ -50,39 +50,12 @@ name='Task Manager'
 EOF
 
 # ---------------------------------------------------------------------------
-# 2. GDM login screen — GDM dconf database
-# ---------------------------------------------------------------------------
-if [[ ! -f /etc/dconf/profile/gdm ]]; then
-    cat > /etc/dconf/profile/gdm <<'EOF'
-user-db:user
-system-db:gdm
-file-db:/usr/share/gdm/greeter-dconf-defaults
-EOF
-fi
-
-mkdir -p /etc/dconf/db/gdm.d
-cat > /etc/dconf/db/gdm.d/00-background <<'EOF'
-[org/gnome/desktop/background]
-picture-options='none'
-primary-color='#000000'
-color-shading-type='solid'
-picture-uri=''
-picture-uri-dark=''
-
-[org/gnome/desktop/screensaver]
-picture-options='none'
-primary-color='#000000'
-color-shading-type='solid'
-picture-uri=''
-EOF
-
-# ---------------------------------------------------------------------------
-# 3. Compile dconf databases
+# 2. Compile dconf databases
 # ---------------------------------------------------------------------------
 dconf update
 
 # ---------------------------------------------------------------------------
-# 4. Hide noisy utility entries from the app menu
+# 3. Hide noisy utility entries from the app menu
 # ---------------------------------------------------------------------------
 # Copy each upstream .desktop file and append NoDisplay=true so that avahi
 # browser tools and V4L utilities do not appear in GNOME Shell search or the
