@@ -38,7 +38,8 @@ EOF
     else
         if ! mkinitcpio_add_hook_before resume filesystems; then
             warn "mkinitcpio: failed to add 'resume' hook before 'filesystems'; skipping hibernate configuration."
-            return 1
+            rm -f /etc/systemd/sleep.conf.d/hibernate-delay.conf
+            return 0
         fi
     fi
 

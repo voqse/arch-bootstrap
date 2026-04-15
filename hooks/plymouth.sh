@@ -23,17 +23,19 @@ fi
 _kms_idx=$(mkinitcpio_hook_index kms)
 _systemd_idx=$(mkinitcpio_hook_index systemd)
 
+_rc=0
 if (( _kms_idx >= 0 || _systemd_idx >= 0 )); then
     if (( _kms_idx > _systemd_idx )); then
         _anchor=kms
     else
         _anchor=systemd
     fi
-    mkinitcpio_add_hook_after plymouth "${_anchor}"
+    mkinitcpio_add_hook_after plymouth "${_anchor}" || _rc=$?
 elif mkinitcpio_has_hook udev; then
-    mkinitcpio_add_hook_after plymouth udev
+    mkinitcpio_add_hook_after plymouth udev || _rc=$?
 else
     warn "plymouth hook: neither 'kms', 'systemd', nor 'udev' found in HOOKS; skipping."
     exit 0
 fi
 unset _kms_idx _systemd_idx _anchor
+exit "${_rc}"
