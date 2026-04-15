@@ -326,7 +326,7 @@ bash bootstrap.sh --preset station
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Prompt for credentials, hostname, timezone, and any unset swap/disk values |
+| 0 | bootstrap.sh | Prompt for credentials, hostname, timezone, and any unset swap values |
 | 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
 | 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
