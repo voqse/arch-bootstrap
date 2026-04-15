@@ -31,15 +31,16 @@ EOF
     # With a busybox-based initramfs the 'resume' hook must be added before
     # 'filesystems'.
     # Ref: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Configure_the_initramfs
-    if grep -qE '^HOOKS=.*\bsystemd\b' /etc/mkinitcpio.conf; then
+    if mkinitcpio_has_hook systemd; then
         info "mkinitcpio: systemd-based initramfs — built-in resume, no extra hook needed."
-    elif grep -q '\bresume\b' /etc/mkinitcpio.conf; then
+    elif mkinitcpio_has_hook resume; then
         info "mkinitcpio: 'resume' hook already present."
     else
-        # Insert 'resume' immediately before 'filesystems' in the HOOKS line.
-        sed -i '/^HOOKS=/ s/filesystems/resume filesystems/' /etc/mkinitcpio.conf
-        info "mkinitcpio: added 'resume' hook before 'filesystems'."
-        run mkinitcpio -P
+        if ! mkinitcpio_add_hook_before resume filesystems; then
+            warn "mkinitcpio: failed to add 'resume' hook before 'filesystems'; skipping hibernate configuration."
+            rm -f /etc/systemd/sleep.conf.d/hibernate-delay.conf
+            return 0
+        fi
     fi
 
     # -- logind: lid-close on battery → suspend-then-hibernate; lid-close on AC → lock only
