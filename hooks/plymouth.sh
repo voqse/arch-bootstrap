@@ -38,4 +38,17 @@ else
     exit 0
 fi
 unset _kms_idx _systemd_idx _anchor
+
+# The mkinitcpio-generate-shutdown-ramfs.service uses MemoryDenyWriteExecute=yes
+# which prevents Plymouth's mkinitcpio hook from running plymouth-set-default-theme
+# (a Python script) during shutdown ramfs generation.  Drop-in disables the
+# restriction so the hook can execute successfully.
+# Ref: https://gitlab.archlinux.org/archlinux/mkinitcpio/mkinitcpio/-/issues/264
+_dropin_dir="/etc/systemd/system/mkinitcpio-generate-shutdown-ramfs.service.d"
+mkdir -p "${_dropin_dir}"
+cat > "${_dropin_dir}/plymouth.conf" <<'EOF'
+[Service]
+MemoryDenyWriteExecute=no
+EOF
+
 exit "${_rc}"
