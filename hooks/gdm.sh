@@ -11,6 +11,13 @@
 # The only reliable mechanism is to append an override rule to the bundled
 # CSS theme and recompile the gresource file.
 #
+# In GNOME Shell 46+ the greeter loads gnome-shell-dark.css or
+# gnome-shell-light.css instead of the legacy gnome-shell.css, so all CSS
+# variants present in the gresource are patched.  The original gresource is
+# saved as gnome-shell-theme.gresource.default on first run so that
+# subsequent invocations (pacman hook after upgrades) always start from a
+# clean baseline.
+#
 # Ref: https://wiki.archlinux.org/title/GDM#Installation
 
 systemctl enable gdm
@@ -51,11 +58,19 @@ set -euo pipefail
 
 _color='#152131'
 _gresource='/usr/share/gnome-shell/gnome-shell-theme.gresource'
+_gresource_default="${_gresource}.default"
+
+# Keep an unmodified copy of the original gresource so that repeated runs
+# (e.g. after a gnome-shell upgrade that restores the file) always start from
+# a clean baseline instead of stacking overrides on an already-patched file.
+if [[ ! -f "$_gresource_default" ]]; then
+    cp "$_gresource" "$_gresource_default"
+fi
 
 _tmpdir=$(mktemp -d)
 trap 'rm -rf "$_tmpdir"' EXIT INT TERM
 
-# Extract every resource, preserving the full path under $_tmpdir.
+# Extract every resource from the ORIGINAL (unmodified) gresource.
 # Validate each resource path to guard against directory traversal.
 while IFS= read -r _res; do
     if [[ "$_res" == *..* ]]; then
@@ -64,20 +79,34 @@ while IFS= read -r _res; do
     fi
     _dst="${_tmpdir}${_res}"
     mkdir -p "$(dirname "$_dst")"
-    gresource extract "$_gresource" "$_res" > "$_dst"
-done < <(gresource list "$_gresource")
+    gresource extract "$_gresource_default" "$_res" > "$_dst"
+done < <(gresource list "$_gresource_default")
 
-# Append background-color override to the main GNOME Shell stylesheet
-_css="${_tmpdir}/org/gnome/shell/theme/gnome-shell.css"
-if [[ ! -f "$_css" ]]; then
-    echo "arch-bootstrap-gdm-color: gnome-shell.css not found in gresource" >&2
+# Append background-color override to every CSS variant present in the theme.
+# In GNOME Shell 46+ the greeter loads gnome-shell-dark.css / gnome-shell-light.css
+# rather than the legacy gnome-shell.css, so all variants must be patched.
+_themedir="${_tmpdir}/org/gnome/shell/theme"
+_css_override="$(printf '\n/* arch-bootstrap: GDM background color */\n#lockDialogGroup { background: %s; }\n' "$_color")"
+
+_patched=0
+for _css in \
+    "$_themedir/gnome-shell.css" \
+    "$_themedir/gnome-shell-dark.css" \
+    "$_themedir/gnome-shell-light.css" \
+    "$_themedir/gnome-shell-high-contrast.css"
+do
+    if [[ -f "$_css" ]]; then
+        printf '%s' "$_css_override" >> "$_css"
+        (( _patched++ )) || true
+    fi
+done
+
+if (( _patched == 0 )); then
+    echo "arch-bootstrap-gdm-color: no CSS files found in gresource" >&2
     exit 1
 fi
-printf '\n/* arch-bootstrap: GDM background color */\n#lockDialogGroup { background: %s; }\n' \
-    "$_color" >> "$_css"
 
 # Generate gresource XML with paths relative to --sourcedir
-_themedir="${_tmpdir}/org/gnome/shell/theme"
 _xml="${_tmpdir}/gdm.gresource.xml"
 {
     echo '<?xml version="1.0" encoding="UTF-8"?>'
@@ -90,7 +119,7 @@ _xml="${_tmpdir}/gdm.gresource.xml"
     echo '</gresources>'
 } > "$_xml"
 
-# Compile to a temporary output first; only replace the original on success
+# Compile to a temporary output first; only replace the live file on success
 _out="${_tmpdir}/gnome-shell-theme.gresource"
 glib-compile-resources \
     --sourcedir="$_themedir" \
