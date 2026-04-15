@@ -136,9 +136,6 @@ section "User credentials"
 ask_value "Username" "user"
 INSTALL_USERNAME="${REPLY}"
 
-ask_value "Supplementary groups" "wheel,audio,video,storage"
-INSTALL_USER_GROUPS="${REPLY}"
-
 ask_password "Password for '${INSTALL_USERNAME}'"
 INSTALL_USER_PASSWORD="${REPLY}"
 
