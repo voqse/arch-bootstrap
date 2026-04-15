@@ -5,6 +5,21 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Install_essential_packages
 # =============================================================================
 
+# Write vconsole.conf to the given target root.
+# Keep in sync with chroot/modules/02-localization.sh, which rewrites the same
+# file inside the target system during the localization step.
+_write_vconsole_conf() {
+    local target_root="$1"
+
+    run mkdir -p "${target_root}/etc"
+    {
+        echo "KEYMAP=${KEYMAP}"
+        echo "FONT=${FONT}"
+        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
+        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
+    } > "${target_root}/etc/vconsole.conf"
+}
+
 module_pacstrap() {
     section "Package installation (pacstrap)"
 
@@ -13,19 +28,8 @@ module_pacstrap() {
     # Without this file the hook emits an error and the initramfs image may
     # be incomplete.  The chroot localization module will overwrite this file
     # later with the same values.
-    run mkdir -p /mnt/etc
-    {
-        echo "KEYMAP=${KEYMAP}"
-        echo "FONT=${FONT}"
-        [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
-        [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
-    } > /mnt/etc/vconsole.conf
+    _write_vconsole_conf /mnt
     info "Pre-wrote /mnt/etc/vconsole.conf (KEYMAP=${KEYMAP}, FONT=${FONT})."
-
-    # Write /mnt/etc/locale.conf so that perl-based pacman hooks do not emit
-    # locale warnings during installation.
-    echo "LANG=${LANG}" > /mnt/etc/locale.conf
-    info "Pre-wrote /mnt/etc/locale.conf (LANG=${LANG})."
 
     local all_packages=()
 
@@ -40,6 +44,8 @@ module_pacstrap() {
     done
 
     info "Installing packages: ${all_packages[*]}"
-    run pacstrap -K /mnt "${all_packages[@]}"
+    # Use a safe locale to suppress Perl locale warnings emitted by some pacman
+    # scriptlets; locale.conf on the host does not affect the pacstrap env.
+    run env LANG=C LC_ALL=C pacstrap -K /mnt "${all_packages[@]}"
     success "pacstrap completed."
 }
