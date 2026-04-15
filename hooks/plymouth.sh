@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Hook: plymouth
 # Inserts the 'plymouth' hook into mkinitcpio HOOKS so that the Plymouth
-# splash screen is shown on early boot, and sets the theme to 'spinner'
-# (a clean spinner with no distribution logo).
+# splash screen is shown on early boot, and sets the theme to 'bgrt'
+# (shows the OEM/UEFI firmware logo from the ACPI BGRT table, hides the
+# distribution logo).
 #
 # Placement rules (Arch Wiki):
 #   - 'plymouth' must come after 'kms' (KMS must be initialised first).
@@ -17,11 +18,11 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${HOOK_DIR}/../lib.sh"
 
-# Set the spinner theme (clean splash with no distribution logo).
-# 'spinner' is bundled with the plymouth package, so it is always available.
+# Set the bgrt theme (shows OEM/UEFI firmware logo, hides distribution logo).
+# 'bgrt' is bundled with the plymouth package, so it is always available.
 # Run unconditionally so the theme is applied even when the mkinitcpio hook
 # was already inserted by a previous run.
-plymouth-set-default-theme spinner
+plymouth-set-default-theme bgrt
 
 if mkinitcpio_has_hook plymouth; then
     exit 0
