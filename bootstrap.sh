@@ -156,24 +156,28 @@ while true; do
     warn "Unknown timezone '${REPLY}'. Check /usr/share/zoneinfo/ for valid entries."
 done
 
-# Swap type and size
-while true; do
-    ask_value "Swap type (file, partition, none)" "${SWAP_TYPE:-file}"
-    case "${REPLY,,}" in
-        file|partition|none) SWAP_TYPE="${REPLY,,}"; break ;;
-        *) warn "Invalid swap type. Enter: file, partition, or none." ;;
-    esac
-done
-
-if [[ "${SWAP_TYPE}" != "none" ]]; then
+# Swap type and size — skip prompts when already set by a preset
+if [[ -z "${SWAP_TYPE:-}" ]]; then
     while true; do
-        ask_value "Swap size" "${SWAP_SIZE:-16G}"
-        if [[ "${REPLY}" =~ ^[1-9][0-9]*[MG]$ ]]; then
-            SWAP_SIZE="${REPLY}"
-            break
-        fi
-        warn "Invalid swap size. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+        ask_value "Swap type (file, partition, none)" "file"
+        case "${REPLY,,}" in
+            file|partition|none) SWAP_TYPE="${REPLY,,}"; break ;;
+            *) warn "Invalid swap type. Enter: file, partition, or none." ;;
+        esac
     done
+
+    if [[ "${SWAP_TYPE}" != "none" ]]; then
+        while true; do
+            ask_value "Swap size" "${SWAP_SIZE:-16G}"
+            if [[ "${REPLY}" =~ ^[1-9][0-9]*[MG]$ ]]; then
+                SWAP_SIZE="${REPLY}"
+                break
+            fi
+            warn "Invalid swap size. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+        done
+    fi
+else
+    info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE:-default}"
 fi
 
 # ---------------------------------------------------------------------------
