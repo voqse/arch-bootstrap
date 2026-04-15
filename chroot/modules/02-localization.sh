@@ -29,7 +29,8 @@ chroot_localization() {
     echo "LANG=${LANG}" > /etc/locale.conf
     success "LANG=${LANG} written to /etc/locale.conf."
 
-    # /etc/vconsole.conf
+    # /etc/vconsole.conf — authoritative write; overwrites the minimal fallback
+    # that was created by the pacstrap module before package installation.
     {
         echo "KEYMAP=${KEYMAP}"
         echo "FONT=${FONT}"
