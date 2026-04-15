@@ -5,9 +5,8 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Install_essential_packages
 # =============================================================================
 
-# Write vconsole.conf to the given target root.
-# Keep in sync with chroot/modules/02-localization.sh, which rewrites the same
-# file inside the target system during the localization step.
+# Write vconsole.conf to the given target root before pacstrap so that the
+# mkinitcpio sd-vconsole hook can find the file when the linux package is installed.
 _write_vconsole_conf() {
     local target_root="$1"
 
@@ -26,8 +25,7 @@ module_pacstrap() {
     # Write /mnt/etc/vconsole.conf before pacstrap so that the mkinitcpio
     # sd-vconsole hook can find it when the linux package is installed.
     # Without this file the hook emits an error and the initramfs image may
-    # be incomplete.  The chroot localization module will overwrite this file
-    # later with the same values.
+    # be incomplete.
     _write_vconsole_conf /mnt
     info "Pre-wrote /mnt/etc/vconsole.conf (KEYMAP=${KEYMAP}, FONT=${FONT})."
 
