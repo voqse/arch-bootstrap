@@ -4,6 +4,7 @@
 #   - Solid #000000 desktop background for user sessions
 #   - Enables gnome-shell-extension-appindicator system-wide
 #   - Custom keyboard shortcuts: Ctrl+Alt+T (terminal), Ctrl+Shift+Esc (btop)
+#   - Hides noisy utility entries from the app menu
 
 # ---------------------------------------------------------------------------
 # 1. User sessions — system-wide dconf local override
@@ -52,3 +53,14 @@ EOF
 # 2. Compile dconf databases
 # ---------------------------------------------------------------------------
 dconf update
+
+# ---------------------------------------------------------------------------
+# 4. Hide noisy utility entries from the app menu
+# ---------------------------------------------------------------------------
+mkdir -p /usr/local/share/applications
+
+# nm-connection-editor: low-level network editor, accessible via Settings
+cat > /usr/local/share/applications/nm-connection-editor.desktop <<'EOF'
+[Desktop Entry]
+NoDisplay=true
+EOF
