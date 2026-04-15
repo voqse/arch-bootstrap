@@ -35,5 +35,5 @@ chroot_initramfs() {
 # Return 0 if the specified hook appears in the HOOKS=(...) line of mkinitcpio.conf.
 _hooks_contain() {
     local hook="$1"
-    grep -qE "^HOOKS=\([^)]*\b${hook}\b[^)]*\)" /etc/mkinitcpio.conf 2>/dev/null
+    grep -qE "^HOOKS=\([^)]*([[:space:]]|\()${hook}([[:space:]]|\))[^)]*\)" /etc/mkinitcpio.conf 2>/dev/null
 }

@@ -46,6 +46,8 @@ _export_config() {
     printf 'LANG=%q\n'             "${LANG}"
     printf 'KEYMAP=%q\n'           "${KEYMAP}"
     printf 'FONT=%q\n'             "${FONT}"
+    printf 'XKBLAYOUT=%q\n'        "${XKBLAYOUT:-}"
+    printf 'XKBOPTIONS=%q\n'       "${XKBOPTIONS:-}"
     printf 'TIMEZONE=%q\n'         "${TIMEZONE}"
     printf 'HOSTNAME=%q\n'         "${HOSTNAME}"
     printf 'INSTALL_USERNAME=%q\n' "${INSTALL_USERNAME:-}"
