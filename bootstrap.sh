@@ -121,12 +121,6 @@ if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
     source "${CONFIG_FILE}"
 fi
 
-# Load all pre-chroot modules in alphabetical order
-for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do
-    # shellcheck source=/dev/null
-    source "${module}"
-done
-
 # ---------------------------------------------------------------------------
 # Collect user credentials (always interactive, independent of preset)
 # ---------------------------------------------------------------------------
@@ -205,12 +199,16 @@ fi
 section "arch-bootstrap — Arch Linux installation"
 info "Config: ${CONFIG_FILE}"
 
-module_pre_checks
-module_disk
-module_mirrors
-module_pacstrap
-module_fstab
-module_chroot
+# Source each module and invoke its entry-point function automatically.
+# Convention: the function name is derived from the filename by stripping the
+# leading numeric prefix and replacing hyphens with underscores, then
+# prefixing with "module_".  E.g. "02-disk.sh" → "module_disk".
+for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do
+    # shellcheck source=/dev/null
+    source "${module}"
+    func="module_$(basename "${module}" .sh | sed 's/^[0-9]*-//' | tr '-' '_')"
+    "${func}"
+done
 
 # ---------------------------------------------------------------------------
 # Done

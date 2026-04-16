@@ -5,7 +5,7 @@
 # will execute hooks/<hook_name>.sh inside the chroot.
 # =============================================================================
 
-chroot_package_hooks() {
+chroot_hooks() {
     section "Package post-install hooks"
 
     local chroot_dir

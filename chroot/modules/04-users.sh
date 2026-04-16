@@ -4,7 +4,7 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Root_password
 # =============================================================================
 
-chroot_root_password() {
+chroot_users() {
     section "Root password"
 
     if [[ -z "${ROOT_PASSWORD:-}" ]]; then
@@ -14,9 +14,7 @@ chroot_root_password() {
         echo "root:${ROOT_PASSWORD}" | chpasswd
         success "Root password set."
     fi
-}
 
-chroot_users() {
     section "User accounts"
 
     # Ensure wheel group members can use sudo
