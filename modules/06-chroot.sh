@@ -5,32 +5,6 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Chroot
 # =============================================================================
 
-module_chroot() (
-    section "Chroot configuration"
-
-    local script_dir chroot_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    chroot_dir="/mnt/root/arch-bootstrap-chroot"
-
-    trap 'rm -rf -- "${chroot_dir}"' EXIT INT TERM HUP
-
-    # Copy chroot scripts and hooks into the new system
-    info "Copying chroot scripts into /mnt..."
-    cp -r "${script_dir}/chroot"  "${chroot_dir}"
-    cp -r "${script_dir}/hooks"   "${chroot_dir}/hooks"
-    cp    "${script_dir}/lib.sh"  "${chroot_dir}/lib.sh"
-
-    # Write the resolved config so the chroot environment reads the same values
-    _export_config > "${chroot_dir}/config.sh"
-
-    chmod +x "${chroot_dir}/configure.sh"
-
-    info "Entering chroot..."
-    run arch-chroot /mnt /root/arch-bootstrap-chroot/configure.sh
-
-    success "Chroot configuration complete."
-)
-
 # Serialise all config variables into a sourceable shell file.
 _export_config() {
     printf '%s\n' '#!/usr/bin/env bash'
@@ -94,3 +68,28 @@ _export_config() {
         printf '%s\n' 'declare -a YAY_PACKAGES=()'
     fi
 }
+
+(
+    section "Chroot configuration"
+
+    _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    _chroot_dir="/mnt/root/arch-bootstrap-chroot"
+
+    trap 'rm -rf -- "${_chroot_dir}"' EXIT INT TERM HUP
+
+    # Copy chroot scripts and hooks into the new system
+    info "Copying chroot scripts into /mnt..."
+    cp -r "${_script_dir}/chroot"  "${_chroot_dir}"
+    cp -r "${_script_dir}/hooks"   "${_chroot_dir}/hooks"
+    cp    "${_script_dir}/lib.sh"  "${_chroot_dir}/lib.sh"
+
+    # Write the resolved config so the chroot environment reads the same values
+    _export_config > "${_chroot_dir}/config.sh"
+
+    chmod +x "${_chroot_dir}/configure.sh"
+
+    info "Entering chroot..."
+    run arch-chroot /mnt /root/arch-bootstrap-chroot/configure.sh
+
+    success "Chroot configuration complete."
+)
