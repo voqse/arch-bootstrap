@@ -102,11 +102,17 @@ arch-bootstrap/
 │       └── 10-sleep.sh       # Suspend-then-hibernate configuration
 │
 └── hooks/                    # Per-package configuration scripts
-    ├── docker.sh             # Adds install user to the docker group
-    ├── gnome-shell.sh        # GNOME appearance — solid black background
-    ├── networkmanager.sh     # Enable NetworkManager (legacy compatibility)
-    ├── nvidia-open.sh        # NVIDIA early KMS — adds modules to mkinitcpio
-    └── ufw.sh                # UFW rules — deny incoming, allow outgoing
+    ├── amdgpu.sh             # AMD GPU early KMS — adds amdgpu module to mkinitcpio
+    ├── bluez.sh              # Enables the Bluetooth daemon
+    ├── docker.sh             # Adds install user to the docker group; enables docker.socket
+    ├── fwupd.sh              # Enables fwupd-refresh.timer
+    ├── gdm.sh                # Enables GDM (display manager)
+    ├── gnome-shell.sh        # GNOME appearance — background, extensions, keyboard shortcuts
+    ├── networkmanager.sh     # Enables NetworkManager; sets iwd as Wi-Fi backend
+    ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
+    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; sets bgrt theme
+    ├── power-profiles-daemon.sh # Enables power-profiles-daemon
+    └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
 ```
 
 ---
@@ -205,12 +211,14 @@ directory. Two ways to attach one:
 
 ```bash
 # hooks/gnome-shell.sh — runs automatically after gnome-shell is installed
-dconf update          # apply pre-written dconf overrides
+# (writes dconf overrides to /etc/dconf/db/local.d/ then compiles them)
+dconf update
 
 # hooks/ufw.sh — called via explicit "ufw:ufw"
 ufw default deny incoming
 ufw default allow outgoing
 ufw --force enable
+systemctl enable ufw
 ```
 
 Scripts execute inside `arch-chroot` after all packages have been installed,
@@ -238,17 +246,17 @@ KERNEL_PARAMS+=("nvidia_drm.modeset=1" "nvidia_drm.fbdev=1")
 
 ```bash
 SERVICES=(
-    "NetworkManager"
-    "bluetooth"
-    "gdm"
+    # fstrim.timer: periodic TRIM for SSD longevity — part of the base system,
+    # not tied to any PACKAGES entry, so it lives here rather than in a hook.
     "fstrim.timer"
-    "fwupd-refresh.timer"
-    "ufw"
-    "docker.socket"
 )
 ```
 
 Each entry is passed verbatim to `systemctl enable` inside the chroot.
+
+> **Note:** Services tied to a specific package are enabled inside that package's
+> hook script rather than here. For example `bluez.sh` enables `bluetooth`,
+> `gdm.sh` enables `gdm`, `networkmanager.sh` enables `NetworkManager`, and so on.
 
 ---
 
@@ -336,10 +344,10 @@ bash bootstrap.sh --preset station
 | — | (chroot) timezone | `/etc/localtime`, `hwclock`, enable timesyncd |
 | — | (chroot) localization | `locale-gen`, `locale.conf`, `vconsole.conf` |
 | — | (chroot) hostname | `/etc/hostname`, `/etc/hosts` |
-| — | (chroot) initramfs | `mkinitcpio -P` |
 | — | (chroot) users | Root password, user account, `/etc/sudoers.d/wheel` |
 | — | (chroot) bootloader | systemd-boot install + config |
 | — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
 | — | (chroot) hooks | Per-package configuration scripts from `hooks/` |
-| — | (chroot) yay | Build + install `yay`; install `YAY_PACKAGES` from the AUR |
 | — | (chroot) sleep | Suspend-then-hibernate via `HIBERNATE_DELAY` (skipped if unset) |
+| — | (chroot) initramfs | `mkinitcpio -P` (runs after hooks so all module/hook changes are applied) |
+| — | (chroot) yay | Build + install `yay`; install `YAY_PACKAGES` from the AUR |
