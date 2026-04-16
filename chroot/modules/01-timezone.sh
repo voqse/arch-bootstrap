@@ -4,15 +4,13 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Time_zone
 # =============================================================================
 
-chroot_timezone() {
-    section "Time zone"
+section "Time zone"
 
-    require_var TIMEZONE
+require_var TIMEZONE
 
-    run ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
-    run hwclock --systohc
-    success "Timezone set to ${TIMEZONE}."
+run ln -sf "/usr/share/zoneinfo/${TIMEZONE}" /etc/localtime
+run hwclock --systohc
+success "Timezone set to ${TIMEZONE}."
 
-    run systemctl enable systemd-timesyncd.service
-    success "NTP time synchronisation enabled (systemd-timesyncd)."
-}
+run systemctl enable systemd-timesyncd.service
+success "NTP time synchronisation enabled (systemd-timesyncd)."
