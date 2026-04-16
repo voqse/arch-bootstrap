@@ -89,7 +89,7 @@ _export_config() {
     chmod +x "${_chroot_dir}/configure.sh"
 
     info "Entering chroot..."
-    run arch-chroot /mnt /root/arch-bootstrap-chroot/configure.sh
+    run arch-chroot /mnt "${_chroot_dir#/mnt}/configure.sh"
 
     success "Chroot configuration complete."
 )
