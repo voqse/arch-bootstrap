@@ -7,9 +7,7 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Initramfs
 # =============================================================================
 
-chroot_initramfs() {
-    section "Initramfs"
+section "Initramfs"
 
-    run mkinitcpio -P
-    success "Initramfs images created."
-}
+run mkinitcpio -P
+success "Initramfs images created."

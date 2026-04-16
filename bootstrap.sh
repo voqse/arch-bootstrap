@@ -121,12 +121,6 @@ if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
     source "${CONFIG_FILE}"
 fi
 
-# Load all pre-chroot modules in alphabetical order
-for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do
-    # shellcheck source=/dev/null
-    source "${module}"
-done
-
 # ---------------------------------------------------------------------------
 # Collect user credentials (always interactive, independent of preset)
 # ---------------------------------------------------------------------------
@@ -147,8 +141,16 @@ ask_value "Hostname" "${HOSTNAME}"
 HOSTNAME="${REPLY}"
 
 # Timezone is not a preset value — it must always be chosen at install time.
+# Try to detect the local timezone from IP geolocation; fall back to UTC.
+_detected_tz=""
+if _detected_tz=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
+        && [[ -f "/usr/share/zoneinfo/${_detected_tz}" ]]; then
+    info "Detected timezone: ${_detected_tz}"
+else
+    _detected_tz="UTC"
+fi
 while true; do
-    ask_value "Timezone" "${TIMEZONE:-UTC}"
+    ask_value "Timezone" "${TIMEZONE:-${_detected_tz}}"
     if [[ -f "/usr/share/zoneinfo/${REPLY}" ]]; then
         TIMEZONE="${REPLY}"
         break
@@ -205,12 +207,15 @@ fi
 section "arch-bootstrap — Arch Linux installation"
 info "Config: ${CONFIG_FILE}"
 
-module_pre_checks
-module_disk
-module_mirrors
-module_pacstrap
-module_fstab
-module_chroot
+shopt -s nullglob
+modules=("${SCRIPT_DIR}/modules"/[0-9]*.sh)
+shopt -u nullglob
+[[ ${#modules[@]} -eq 0 ]] && die "No modules found in ${SCRIPT_DIR}/modules/"
+
+for module in "${modules[@]}"; do
+    # shellcheck source=/dev/null
+    source "${module}"
+done
 
 # ---------------------------------------------------------------------------
 # Done

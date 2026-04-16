@@ -10,20 +10,13 @@ CHROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${CHROOT_DIR}/lib.sh"
 source "${CHROOT_DIR}/config.sh"
 
-for module in "${CHROOT_DIR}/modules"/[0-9]*.sh; do
+# Source each module in sorted order; each module runs as a plain script.
+shopt -s nullglob
+modules=("${CHROOT_DIR}/modules"/[0-9]*.sh)
+shopt -u nullglob
+[[ ${#modules[@]} -eq 0 ]] && die "No modules found in ${CHROOT_DIR}/modules/"
+
+for module in "${modules[@]}"; do
     # shellcheck source=/dev/null
     source "${module}"
 done
-
-chroot_timezone
-chroot_localization
-chroot_hostname
-chroot_network
-chroot_root_password
-chroot_users
-chroot_bootloader
-chroot_services
-chroot_package_hooks
-chroot_sleep
-chroot_initramfs
-chroot_yay

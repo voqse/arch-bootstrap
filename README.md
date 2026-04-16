@@ -93,13 +93,13 @@ arch-bootstrap/
 │       ├── 01-timezone.sh    # Timezone + systemd-timesyncd
 │       ├── 02-localization.sh# locale.gen, locale.conf, vconsole.conf
 │       ├── 03-hostname.sh    # /etc/hostname, /etc/hosts
-│       ├── 04-initramfs.sh   # mkinitcpio
-│       ├── 05-users.sh       # Root password + user accounts + sudoers
-│       ├── 06-bootloader.sh  # systemd-boot install + config
-│       ├── 07-services.sh    # systemctl enable for SERVICES array
-│       ├── 08-hooks.sh       # Per-package configuration scripts
-│       ├── 09-yay.sh         # AUR helper (yay) + YAY_PACKAGES install
-│       └── 10-sleep.sh       # Suspend-then-hibernate configuration
+│       ├── 04-users.sh       # Root password + user accounts + sudoers
+│       ├── 05-bootloader.sh  # systemd-boot install + config
+│       ├── 06-services.sh    # systemctl enable for SERVICES array
+│       ├── 07-hooks.sh       # Per-package configuration scripts
+│       ├── 08-sleep.sh       # Suspend-then-hibernate configuration
+│       ├── 09-initramfs.sh   # mkinitcpio (runs after all hooks)
+│       └── 10-yay.sh         # AUR helper (yay) + YAY_PACKAGES install
 │
 └── hooks/                    # Per-package configuration scripts
     ├── amdgpu.sh             # AMD GPU early KMS — adds amdgpu module to mkinitcpio

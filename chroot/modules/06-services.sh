@@ -6,20 +6,18 @@
 # timers like fstrim.timer). Package-specific services are enabled in hooks.
 # =============================================================================
 
-chroot_services() {
-    section "Enabling services"
+section "Enabling services"
 
-    if [[ ${#SERVICES[@]} -eq 0 ]]; then
-        info "No services defined in SERVICES; skipping."
-        return
-    fi
+if [[ ${#SERVICES[@]} -eq 0 ]]; then
+    info "No services defined in SERVICES; skipping."
+    return
+fi
 
-    local enabled=0
-    for svc in "${SERVICES[@]}"; do
-        info "Enabling: ${svc}"
-        systemctl enable "${svc}" || warn "Failed to enable ${svc}."
-        enabled=$((enabled + 1))
-    done
+_services_enabled=0
+for _svc in "${SERVICES[@]}"; do
+    info "Enabling: ${_svc}"
+    systemctl enable "${_svc}" || warn "Failed to enable ${_svc}."
+    _services_enabled=$((_services_enabled + 1))
+done
 
-    success "Enabled ${enabled} service(s)."
-}
+success "Enabled ${_services_enabled} service(s)."

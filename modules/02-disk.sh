@@ -15,16 +15,6 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
 # =============================================================================
 
-module_disk() {
-    section "Disk partitioning"
-
-    _select_disk
-    _confirm_disk
-    _partition_disk
-    _format_partitions
-    _mount_partitions
-}
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -215,3 +205,15 @@ _create_swapfile() {
 
     success "Swapfile created and activated."
 }
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+section "Disk partitioning"
+
+_select_disk
+_confirm_disk
+_partition_disk
+_format_partitions
+_mount_partitions

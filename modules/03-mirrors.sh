@@ -5,30 +5,28 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Select_the_mirrors
 # =============================================================================
 
-module_mirrors() {
-    section "Mirror selection"
+section "Mirror selection"
 
-    if declare -p MIRRORS &>/dev/null && [[ ${#MIRRORS[@]} -gt 0 ]]; then
-        info "Applying mirrors from config..."
-        printf 'Server = %s\n' "${MIRRORS[@]}" > /etc/pacman.d/mirrorlist
-        success "Mirrorlist updated from config."
-        return
-    fi
+if declare -p MIRRORS &>/dev/null && [[ ${#MIRRORS[@]} -gt 0 ]]; then
+    info "Applying mirrors from config..."
+    printf 'Server = %s\n' "${MIRRORS[@]}" > /etc/pacman.d/mirrorlist
+    success "Mirrorlist updated from config."
+    return
+fi
 
-    if command -v reflector &>/dev/null; then
-        local args=(
-            --save /etc/pacman.d/mirrorlist
-            --protocol https
-            --latest 20
-            --sort rate
-        )
-        if [[ -n "${MIRROR_COUNTRY:-}" ]]; then
-            args+=(--country "${MIRROR_COUNTRY}")
-        fi
-        info "Running reflector to select fastest mirrors..."
-        run reflector "${args[@]}"
-        success "Mirrorlist updated via reflector."
-    else
-        warn "reflector not found; keeping default mirrorlist."
+if command -v reflector &>/dev/null; then
+    _reflector_args=(
+        --save /etc/pacman.d/mirrorlist
+        --protocol https
+        --latest 20
+        --sort rate
+    )
+    if [[ -n "${MIRROR_COUNTRY:-}" ]]; then
+        _reflector_args+=(--country "${MIRROR_COUNTRY}")
     fi
-}
+    info "Running reflector to select fastest mirrors..."
+    run reflector "${_reflector_args[@]}"
+    success "Mirrorlist updated via reflector."
+else
+    warn "reflector not found; keeping default mirrorlist."
+fi
