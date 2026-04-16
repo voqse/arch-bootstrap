@@ -11,10 +11,6 @@ chroot_hostname() {
 
     echo "${HOSTNAME}" > /etc/hostname
     success "Hostname set to: ${HOSTNAME}."
-}
-
-chroot_network() {
-    section "Network"
 
     # /etc/hosts
     cat > /etc/hosts <<EOF

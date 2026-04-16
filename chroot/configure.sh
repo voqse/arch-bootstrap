@@ -10,20 +10,13 @@ CHROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${CHROOT_DIR}/lib.sh"
 source "${CHROOT_DIR}/config.sh"
 
+# Source each module and invoke its entry-point function automatically.
+# Convention: the function name is derived from the filename by stripping the
+# leading numeric prefix and replacing hyphens with underscores, then
+# prefixing with "chroot_".  E.g. "03-hostname.sh" → "chroot_hostname".
 for module in "${CHROOT_DIR}/modules"/[0-9]*.sh; do
     # shellcheck source=/dev/null
     source "${module}"
+    func="chroot_$(basename "${module}" .sh | sed 's/^[0-9]*-//' | tr '-' '_')"
+    "${func}"
 done
-
-chroot_timezone
-chroot_localization
-chroot_hostname
-chroot_network
-chroot_root_password
-chroot_users
-chroot_bootloader
-chroot_services
-chroot_package_hooks
-chroot_sleep
-chroot_initramfs
-chroot_yay
