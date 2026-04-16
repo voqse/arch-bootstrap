@@ -6,24 +6,23 @@
 # Ref: https://github.com/Jguer/yay
 # =============================================================================
 
-chroot_yay() (
+(
     section "yay AUR helper"
 
     if [[ ${#YAY_PACKAGES[@]} -eq 0 ]]; then
         info "YAY_PACKAGES is empty — skipping yay setup."
-        return
+        exit 0
     fi
 
     require_var INSTALL_USERNAME
     require_var INSTALL_USER_PASSWORD
 
-    local build_dir="/home/${INSTALL_USERNAME}/yay"
-    local sudoers_tmp="/etc/sudoers.d/yay-build"
+    build_dir="/home/${INSTALL_USERNAME}/yay"
+    sudoers_tmp="/etc/sudoers.d/yay-build"
 
     # Provide the user's password to sudo non-interactively via SUDO_ASKPASS,
     # so makepkg / yay can call 'sudo pacman' without a manual prompt.
     # Use /dev/shm (tmpfs) so the files never touch disk.
-    local passfile askpass
     passfile=$(mktemp /dev/shm/yay-pass.XXXXXX)
     askpass=$(mktemp /dev/shm/yay-askpass.XXXXXX)
     printf '%s\n' "${INSTALL_USER_PASSWORD}" > "${passfile}"

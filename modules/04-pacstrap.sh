@@ -16,32 +16,30 @@ _write_vconsole_fallback() {
     echo "KEYMAP=${KEYMAP}" > "${target_root}/etc/vconsole.conf"
 }
 
-module_pacstrap() {
-    section "Package installation (pacstrap)"
+section "Package installation (pacstrap)"
 
-    # Write a minimal /mnt/etc/vconsole.conf before pacstrap so that the
-    # mkinitcpio sd-vconsole hook can find it when the linux package is
-    # installed.  Without this file the hook emits an error and the initramfs
-    # image may be incomplete.  The chroot localization module will overwrite
-    # this file with the full configuration.
-    _write_vconsole_fallback /mnt
-    info "Pre-wrote /mnt/etc/vconsole.conf fallback (KEYMAP=${KEYMAP})."
+# Write a minimal /mnt/etc/vconsole.conf before pacstrap so that the
+# mkinitcpio sd-vconsole hook can find it when the linux package is
+# installed.  Without this file the hook emits an error and the initramfs
+# image may be incomplete.  The chroot localization module will overwrite
+# this file with the full configuration.
+_write_vconsole_fallback /mnt
+info "Pre-wrote /mnt/etc/vconsole.conf fallback (KEYMAP=${KEYMAP})."
 
-    local all_packages=()
+_pacstrap_packages=()
 
-    # Base packages (always installed)
-    for entry in "${BASE_PACKAGES[@]}"; do
-        all_packages+=("${entry%%:*}")
-    done
+# Base packages (always installed)
+for entry in "${BASE_PACKAGES[@]}"; do
+    _pacstrap_packages+=("${entry%%:*}")
+done
 
-    # User-defined packages (strip optional hook suffix)
-    for entry in "${PACKAGES[@]}"; do
-        all_packages+=("${entry%%:*}")
-    done
+# User-defined packages (strip optional hook suffix)
+for entry in "${PACKAGES[@]}"; do
+    _pacstrap_packages+=("${entry%%:*}")
+done
 
-    info "Installing packages: ${all_packages[*]}"
-    # Use a safe locale to suppress Perl locale warnings emitted by some pacman
-    # scriptlets; locale.conf on the host does not affect the pacstrap env.
-    run env LANG=C LC_ALL=C pacstrap -K /mnt "${all_packages[@]}"
-    success "pacstrap completed."
-}
+info "Installing packages: ${_pacstrap_packages[*]}"
+# Use a safe locale to suppress Perl locale warnings emitted by some pacman
+# scriptlets; locale.conf on the host does not affect the pacstrap env.
+run env LANG=C LC_ALL=C pacstrap -K /mnt "${_pacstrap_packages[@]}"
+success "pacstrap completed."

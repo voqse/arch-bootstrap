@@ -4,12 +4,6 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Boot_loader
 # =============================================================================
 
-chroot_bootloader() {
-    section "Boot loader"
-
-    _install_systemd_boot
-}
-
 # ---------------------------------------------------------------------------
 # systemd-boot
 # ---------------------------------------------------------------------------
@@ -76,3 +70,11 @@ EOF
 
     success "systemd-boot installed and configured."
 }
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+section "Boot loader"
+
+_install_systemd_boot

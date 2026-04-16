@@ -199,15 +199,14 @@ fi
 section "arch-bootstrap — Arch Linux installation"
 info "Config: ${CONFIG_FILE}"
 
-# Source each module and invoke its entry-point function automatically.
-# Convention: the function name is derived from the filename by stripping the
-# leading numeric prefix and replacing hyphens with underscores, then
-# prefixing with "module_".  E.g. "02-disk.sh" → "module_disk".
-for module in "${SCRIPT_DIR}/modules"/[0-9]*.sh; do
+shopt -s nullglob
+modules=("${SCRIPT_DIR}/modules"/[0-9]*.sh)
+shopt -u nullglob
+[[ ${#modules[@]} -eq 0 ]] && die "No modules found in ${SCRIPT_DIR}/modules/"
+
+for module in "${modules[@]}"; do
     # shellcheck source=/dev/null
     source "${module}"
-    func="module_$(basename "${module}" .sh | sed 's/^[0-9]*-//' | tr '-' '_')"
-    "${func}"
 done
 
 # ---------------------------------------------------------------------------
