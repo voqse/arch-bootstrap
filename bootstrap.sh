@@ -141,8 +141,16 @@ ask_value "Hostname" "${HOSTNAME}"
 HOSTNAME="${REPLY}"
 
 # Timezone is not a preset value — it must always be chosen at install time.
+# Try to detect the local timezone from IP geolocation; fall back to UTC.
+_detected_tz=""
+if _detected_tz=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
+        && [[ -f "/usr/share/zoneinfo/${_detected_tz}" ]]; then
+    info "Detected timezone: ${_detected_tz}"
+else
+    _detected_tz="UTC"
+fi
 while true; do
-    ask_value "Timezone" "${TIMEZONE:-UTC}"
+    ask_value "Timezone" "${TIMEZONE:-${_detected_tz}}"
     if [[ -f "/usr/share/zoneinfo/${REPLY}" ]]; then
         TIMEZONE="${REPLY}"
         break
