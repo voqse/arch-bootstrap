@@ -52,35 +52,9 @@
             "${YAY_PACKAGES[@]}"
         success "AUR packages installed: ${YAY_PACKAGES[*]}"
 
-        # Run per-package hooks for YAY_PACKAGES entries (same pattern as 07-hooks.sh).
-        # Entries may specify an explicit hook: "package:hook_name".
-        # If hooks/<package>.sh exists it is run automatically even without a suffix.
+        # Run per-package hooks for YAY_PACKAGES entries.
         _yay_hooks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hooks"
-        _yay_hooks_ran=0
-        for _yay_entry in "${YAY_PACKAGES[@]}"; do
-            _yay_pkg="${_yay_entry%%:*}"
-            _yay_hook="${_yay_entry#*:}"
-
-            # No hook defined and no matching hook script
-            if [[ "${_yay_hook}" == "${_yay_pkg}" ]] && \
-               [[ ! -f "${_yay_hooks_dir}/${_yay_hook}.sh" ]]; then
-                continue
-            fi
-
-            _yay_hook_file="${_yay_hooks_dir}/${_yay_hook}.sh"
-            if [[ ! -f "${_yay_hook_file}" ]]; then
-                warn "Hook script not found for AUR package '${_yay_pkg}': ${_yay_hook_file}"
-                continue
-            fi
-
-            info "Running hook for AUR package '${_yay_pkg}': ${_yay_hook_file}"
-            bash "${_yay_hook_file}" || warn "Hook for '${_yay_pkg}' exited with error."
-            _yay_hooks_ran=$((_yay_hooks_ran + 1))
-        done
-
-        if (( _yay_hooks_ran > 0 )); then
-            success "Ran ${_yay_hooks_ran} AUR post-install hook(s)."
-        fi
+        run_hooks "${_yay_hooks_dir}" "AUR package" "${YAY_PACKAGES[@]}"
     else
         info "YAY_PACKAGES is empty — skipping AUR package installation."
     fi
