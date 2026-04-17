@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Module 05 — Fstab generation
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Fstab
-# =============================================================================
 
 section "Generating fstab"
 

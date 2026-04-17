@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Module 06 — Chroot configuration
 # Copies required files into /mnt and runs the chroot configurator.
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Chroot
-# =============================================================================
 
 # Serialise all config variables into a sourceable shell file.
 _export_config() {

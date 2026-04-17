@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # chroot/configure.sh — Runs inside arch-chroot to configure the new system.
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Configure_the_system
-# =============================================================================
 set -euo pipefail
 
 CHROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
