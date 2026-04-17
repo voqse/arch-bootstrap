@@ -125,6 +125,45 @@ section() {
     echo
 }
 
+# Run post-install hooks for a list of package entries.
+# Usage: run_hooks <hooks_dir> <label> [<entry> ...]
+# Each entry may be "pkg" (hook auto-discovered by name) or "pkg:hook_name".
+run_hooks() {
+    local hooks_dir="$1"
+    local label="$2"
+    shift 2
+
+    local hooks_ran=0
+    local entry pkg hook hook_file
+
+    for entry in "$@"; do
+        pkg="${entry%%:*}"
+        hook="${entry#*:}"
+
+        # No colon and no matching hook script — nothing to do.
+        if [[ "${hook}" == "${pkg}" ]] && [[ ! -f "${hooks_dir}/${hook}.sh" ]]; then
+            continue
+        fi
+
+        hook_file="${hooks_dir}/${hook}.sh"
+        if [[ ! -f "${hook_file}" ]]; then
+            warn "Hook script not found for ${label} '${pkg}': ${hook_file}"
+            continue
+        fi
+
+        info "Running hook for ${label} '${pkg}': ${hook_file}"
+        # shellcheck source=/dev/null
+        bash "${hook_file}" || warn "Hook for '${pkg}' exited with error."
+        hooks_ran=$(( hooks_ran + 1 ))
+    done
+
+    if (( hooks_ran == 0 )); then
+        info "No post-install hooks to run."
+    else
+        success "Ran ${hooks_ran} post-install hook(s)."
+    fi
+}
+
 # mkinitcpio helpers
 # All functions operate on /etc/mkinitcpio.conf by default.
 # Override by setting MKINITCPIO_CONF before sourcing this file.
