@@ -7,9 +7,7 @@
 #   - Enables AppIndicator tray icon extension
 #   - Custom keyboard shortcuts: Ctrl+Alt+T (terminal), Ctrl+Shift+Esc (btop)
 
-# ---------------------------------------------------------------------------
 # 1. User sessions — system-wide dconf local override
-# ---------------------------------------------------------------------------
 mkdir -p /etc/dconf/profile
 # Only create the user profile if it doesn't already exist
 if [[ ! -f /etc/dconf/profile/user ]]; then
@@ -51,14 +49,10 @@ command='kgx -- btop'
 name='Task Manager'
 EOF
 
-# ---------------------------------------------------------------------------
 # 3. Compile dconf databases
-# ---------------------------------------------------------------------------
 dconf update
 
-# ---------------------------------------------------------------------------
 # 4. Hide noisy utility entries from the app menu
-# ---------------------------------------------------------------------------
 # Copy each upstream .desktop file and append NoDisplay=true so that avahi
 # browser tools and V4L utilities do not appear in GNOME Shell search or the
 # application grid.  /usr/local/share/applications takes precedence over

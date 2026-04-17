@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# =============================================================================
 # arch-bootstrap — Modular Arch Linux installation script
 #
 # Usage:
@@ -7,19 +6,16 @@
 #
 # Run from the Arch ISO live environment:
 #   bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
-# =============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ---------------------------------------------------------------------------
 # Self-bootstrap: when run via "bash <(curl ...)" the script is fed through a
 # file-descriptor, so SCRIPT_DIR resolves to /dev/fd or similar and sibling
 # files (lib.sh, modules/) are absent.  Download the repository archive into
 # a temp directory and re-execute from there so that all relative paths work
 # correctly.  curl is used instead of git because git may be unavailable in
 # the live environment (e.g., Arch ISO).
-# ---------------------------------------------------------------------------
 _REPO_URL="https://github.com/voqse/arch-bootstrap"
 _REPO_BRANCH="master"
 _CLONE_DIR="/tmp/arch-bootstrap"
@@ -33,9 +29,7 @@ if [[ ! -f "${SCRIPT_DIR}/lib.sh" || ! -d "${SCRIPT_DIR}/modules" ]]; then
     exec bash "${_CLONE_DIR}/bootstrap.sh" "$@"
 fi
 
-# ---------------------------------------------------------------------------
 # Argument parsing
-# ---------------------------------------------------------------------------
 CONFIG_FILE="${SCRIPT_DIR}/config/default.conf"
 _PRESET_NAME=""
 _CONFIG_EXPLICIT=false
@@ -95,9 +89,7 @@ if [[ -n "${_PRESET_NAME}" ]]; then
     CONFIG_FILE="${SCRIPT_DIR}/config/${_PRESET_NAME}.conf"
 fi
 
-# ---------------------------------------------------------------------------
 # Bootstrap
-# ---------------------------------------------------------------------------
 
 # Load shared library
 # shellcheck source=lib.sh
@@ -121,9 +113,7 @@ if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
     source "${CONFIG_FILE}"
 fi
 
-# ---------------------------------------------------------------------------
 # Collect user credentials (always interactive, independent of preset)
-# ---------------------------------------------------------------------------
 
 section "User credentials"
 
@@ -200,9 +190,7 @@ else
     fi
 fi
 
-# ---------------------------------------------------------------------------
 # Run installation pipeline
-# ---------------------------------------------------------------------------
 
 section "arch-bootstrap — Arch Linux installation"
 info "Config: ${CONFIG_FILE}"
@@ -217,9 +205,7 @@ for module in "${modules[@]}"; do
     source "${module}"
 done
 
-# ---------------------------------------------------------------------------
 # Done
-# ---------------------------------------------------------------------------
 section "Installation complete"
 echo
 success "Arch Linux has been installed successfully!"

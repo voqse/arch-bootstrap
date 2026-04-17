@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Chroot module — Localization
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Localization
-# =============================================================================
 
 section "Localization"
 
