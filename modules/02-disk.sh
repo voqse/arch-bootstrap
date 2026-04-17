@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Module 02 — Disk partitioning, formatting and mounting
 #
 # Partition layouts (GPT / UEFI):
@@ -13,11 +12,8 @@
 #     Part 3 — remainder                        (ext4)
 #
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
-# =============================================================================
 
-# ---------------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------------
 
 _list_disks() {
     lsblk -d -n -o NAME,SIZE,MODEL,TYPE | grep -E 'disk$' | nl -w2 -s') '
@@ -206,9 +202,7 @@ _create_swapfile() {
     success "Swapfile created and activated."
 }
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 
 section "Disk partitioning"
 

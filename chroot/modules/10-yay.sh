@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Chroot module — yay (AUR helper) initialisation
 # Builds and installs yay from the AUR as the primary install user, then
 # installs every package listed in YAY_PACKAGES and removes the build tree.
 # Ref: https://github.com/Jguer/yay
-# =============================================================================
 
 # Run in a subshell so the EXIT trap and temporary variable assignments are
 # isolated from the rest of the chroot configuration.  `exit` (not `return`)

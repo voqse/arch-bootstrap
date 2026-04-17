@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Module 03 — Mirror selection
 # Uses reflector to rank mirrors by speed, or applies a user-defined list.
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Select_the_mirrors
-# =============================================================================
 
 section "Mirror selection"
 
