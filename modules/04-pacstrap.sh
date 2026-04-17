@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Module 04 — Package installation via pacstrap
 # Installs base packages plus user-defined packages into /mnt.
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Install_essential_packages
-# =============================================================================
 
 # Write a minimal vconsole.conf fallback to the given target root before
 # pacstrap so that the mkinitcpio sd-vconsole hook can find the file when

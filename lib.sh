@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# =============================================================================
 # lib.sh — shared helper functions used across all modules
-# =============================================================================
 
 # Colours
 RED='\033[0;31m'
@@ -127,11 +125,9 @@ section() {
     echo
 }
 
-# =============================================================================
 # mkinitcpio helpers
 # All functions operate on /etc/mkinitcpio.conf by default.
 # Override by setting MKINITCPIO_CONF before sourcing this file.
-# =============================================================================
 MKINITCPIO_CONF="${MKINITCPIO_CONF:-/etc/mkinitcpio.conf}"
 
 # Return 0 if module $1 is present in MODULES=(...).

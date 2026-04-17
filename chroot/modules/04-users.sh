@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Chroot module — Root password and user accounts
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Root_password
-# =============================================================================
 
 _create_user() {
     local username="$1" groups="$2" password="$3"

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Chroot module — Time zone
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Time_zone
-# =============================================================================
 
 section "Time zone"
 

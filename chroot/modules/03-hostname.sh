@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# =============================================================================
 # Chroot module — Network configuration / Hostname
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Network_configuration
-# =============================================================================
 
 section "Hostname"
 
