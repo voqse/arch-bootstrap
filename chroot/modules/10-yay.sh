@@ -10,37 +10,18 @@
 (
     section "yay AUR helper"
 
-    if [[ ${#YAY_PACKAGES[@]} -eq 0 ]]; then
-        info "YAY_PACKAGES is empty — skipping yay setup."
-        exit 0
-    fi
-
     require_var INSTALL_USERNAME
-    require_var INSTALL_USER_PASSWORD
 
     _build_dir="/home/${INSTALL_USERNAME}/yay"
     _sudoers_tmp="/etc/sudoers.d/yay-build"
 
-    # Provide the user's password to sudo non-interactively via SUDO_ASKPASS,
-    # so makepkg / yay can call 'sudo pacman' without a manual prompt.
-    # Use /dev/shm (tmpfs) so the files never touch disk.
-    _passfile=$(mktemp /dev/shm/yay-pass.XXXXXX)
-    _askpass=$(mktemp /dev/shm/yay-askpass.XXXXXX)
-    printf '%s\n' "${INSTALL_USER_PASSWORD}" > "${_passfile}"
-    chmod 0600 "${_passfile}"
-    chown "${INSTALL_USERNAME}": "${_passfile}"
-    printf '#!/bin/sh\ncat "%s"\n' "${_passfile}" > "${_askpass}"
-    chmod 0700 "${_askpass}"
-    chown "${INSTALL_USERNAME}": "${_askpass}"
-
-    # Sudoers entry: allow the user to run pacman and preserve SUDO_ASKPASS
-    # across the sudo boundary (no NOPASSWD — password is supplied via askpass).
-    cat > "${_sudoers_tmp}" <<EOF
-Defaults:${INSTALL_USERNAME} env_keep += "SUDO_ASKPASS"
-${INSTALL_USERNAME} ALL=(ALL) /usr/bin/pacman
-EOF
+    # Grant the user passwordless pacman access so makepkg and yay never
+    # prompt for a password during the unattended build.
+    # The entry is temporary — the EXIT trap removes it when this subshell ends.
+    printf '%s ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' \
+        "${INSTALL_USERNAME}" > "${_sudoers_tmp}"
     chmod 0440 "${_sudoers_tmp}"
-    trap 'rm -f "${_sudoers_tmp}" "${_passfile}" "${_askpass}"' EXIT INT TERM HUP
+    trap 'rm -f "${_sudoers_tmp}"' EXIT INT TERM HUP
 
     # Remove any leftover build directory to make this step re-runnable.
     rm -rf "${_build_dir}"
@@ -51,10 +32,9 @@ EOF
         git clone --depth=1 \
         https://aur.archlinux.org/yay.git "${_build_dir}"
 
-    # Build and install yay; SUDO_ASKPASS supplies the password to internal pacman calls.
+    # Build and install yay; NOPASSWD sudoers covers the internal pacman calls.
     info "Building and installing yay..."
     run sudo -H -u "${INSTALL_USERNAME}" \
-        env SUDO_ASKPASS="${_askpass}" \
         bash -c "cd '${_build_dir}' && makepkg -si --noconfirm"
 
     # Remove the yay repository directory
@@ -64,12 +44,18 @@ EOF
 
     success "yay installed."
 
-    # Install AUR packages
-    info "Installing AUR packages: ${YAY_PACKAGES[*]}"
-    run sudo -H -u "${INSTALL_USERNAME}" \
-        env SUDO_ASKPASS="${_askpass}" \
-        yay -S --noconfirm --answerdiff=None --answerclean=None \
-        "${YAY_PACKAGES[@]}"
+    if [[ ${#YAY_PACKAGES[@]} -gt 0 ]]; then
+        # Install AUR packages without any confirmation prompts
+        info "Installing AUR packages: ${YAY_PACKAGES[*]}"
+        run sudo -H -u "${INSTALL_USERNAME}" \
+            yay -S --noconfirm --answerdiff=None --answerclean=None \
+            "${YAY_PACKAGES[@]}"
+        success "AUR packages installed: ${YAY_PACKAGES[*]}"
 
-    success "AUR packages installed: ${YAY_PACKAGES[*]}"
+        # Run per-package hooks for YAY_PACKAGES entries.
+        _yay_hooks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hooks"
+        run_hooks "${_yay_hooks_dir}" "AUR package" "${YAY_PACKAGES[@]}"
+    else
+        info "YAY_PACKAGES is empty — skipping AUR package installation."
+    fi
 )
