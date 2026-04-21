@@ -41,8 +41,11 @@ do
     fi
 done
 
-# Fall back to creating ~/.bash_profile if no profile files exist yet
+# Fall back to creating ~/.bash_profile if no profile files exist yet.
+# Also source ~/.bashrc so that interactive non-login shells (e.g. terminal
+# emulators) pick up the nvm initialisation via the login profile.
 if (( _added == 0 )); then
-    printf '\n%s\n%s\n' "${_nvm_source}" "${_nvm_load}" > "${_user_home}/.bash_profile"
+    printf '[[ -f ~/.bashrc ]] && . ~/.bashrc\n\n%s\n%s\n' \
+        "${_nvm_source}" "${_nvm_load}" > "${_user_home}/.bash_profile"
     chown "${INSTALL_USERNAME}": "${_user_home}/.bash_profile"
 fi
