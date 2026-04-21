@@ -45,16 +45,20 @@
     success "yay installed."
 
     if [[ ${#YAY_PACKAGES[@]} -gt 0 ]]; then
-        # Install AUR packages without any confirmation prompts
-        info "Installing AUR packages: ${YAY_PACKAGES[*]}"
-        run sudo -H -u "${INSTALL_USERNAME}" \
-            yay -S --noconfirm --answerdiff=None --answerclean=None \
-            "${YAY_PACKAGES[@]}"
-        success "AUR packages installed: ${YAY_PACKAGES[*]}"
-
-        # Run per-package hooks for YAY_PACKAGES entries.
+        # Install AUR packages one by one so a single failure does not abort
+        # the entire installation.
         _yay_hooks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hooks"
-        run_hooks "${_yay_hooks_dir}" "AUR package" "${YAY_PACKAGES[@]}"
+        for _pkg in "${YAY_PACKAGES[@]}"; do
+            info "Installing AUR package: ${_pkg}"
+            if run sudo -H -u "${INSTALL_USERNAME}" \
+                yay -S --noconfirm --answerdiff=None --answerclean=None \
+                "${_pkg}"; then
+                success "AUR package installed: ${_pkg}"
+                run_hooks "${_yay_hooks_dir}" "AUR package" "${_pkg}"
+            else
+                warn "Failed to install AUR package: ${_pkg} — skipping."
+            fi
+        done
     else
         info "YAY_PACKAGES is empty — skipping AUR package installation."
     fi
