@@ -148,16 +148,13 @@ if [[ -n "${SWAP_TYPE:-}" ]]; then
     fi
 fi
 
-# 3. Detect timezone via IP geolocation — only on the live ISO
-# (when run via "bash <(curl ...)" the script re-executes from _CLONE_DIR).
+# 3. Detect timezone via IP geolocation (best-effort, fallback to UTC).
 _detected_tz="UTC"
-if [[ "${SCRIPT_DIR}" == "${_CLONE_DIR}" ]]; then
-    _tz_candidate=""
-    if _tz_candidate=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
-            && [[ -f "/usr/share/zoneinfo/${_tz_candidate}" ]]; then
-        _detected_tz="${_tz_candidate}"
-        info "Detected timezone: ${_detected_tz}"
-    fi
+_tz_candidate=""
+if _tz_candidate=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
+        && [[ -f "/usr/share/zoneinfo/${_tz_candidate}" ]]; then
+    _detected_tz="${_tz_candidate}"
+    info "Detected timezone: ${_detected_tz}"
 fi
 
 # Collect user credentials (always interactive, independent of preset)
