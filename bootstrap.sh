@@ -113,6 +113,50 @@ if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
     source "${CONFIG_FILE}"
 fi
 
+# Pre-flight checks — run before any interactive prompts
+
+section "Pre-flight checks"
+
+# 1. Confirm selected preset
+if [[ "${CONFIG_FILE}" != "${_DEFAULT_CONF}" ]]; then
+    info "Preset: ${CONFIG_FILE}"
+else
+    info "Preset: default (${CONFIG_FILE})"
+fi
+ask_yn "Continue with this configuration?" "y" || exit 0
+
+# 2. Validate preset swap configuration when already set by a preset
+if [[ -n "${SWAP_TYPE:-}" ]]; then
+    case "${SWAP_TYPE,,}" in
+        file|partition|none) SWAP_TYPE="${SWAP_TYPE,,}" ;;
+        *)
+            die "Invalid SWAP_TYPE in preset/config: '${SWAP_TYPE}'. Expected: file, partition, or none."
+            ;;
+    esac
+
+    if [[ "${SWAP_TYPE}" != "none" ]]; then
+        if [[ -z "${SWAP_SIZE:-}" ]]; then
+            die "SWAP_SIZE must be set in preset/config when SWAP_TYPE is '${SWAP_TYPE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+        fi
+        if [[ ! "${SWAP_SIZE}" =~ ^[1-9][0-9]*[MmGg]$ ]]; then
+            die "Invalid SWAP_SIZE in preset/config: '${SWAP_SIZE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
+        fi
+        SWAP_SIZE="${SWAP_SIZE^^}"
+        info "Swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE}"
+    else
+        info "Swap configuration from preset: type=${SWAP_TYPE}"
+    fi
+fi
+
+# 3. Detect timezone via IP geolocation (best-effort, fallback to UTC).
+_detected_tz="UTC"
+_tz_candidate=""
+if _tz_candidate=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
+        && [[ -f "/usr/share/zoneinfo/${_tz_candidate}" ]]; then
+    _detected_tz="${_tz_candidate}"
+    info "Detected timezone: ${_detected_tz}"
+fi
+
 # Collect user credentials (always interactive, independent of preset)
 
 section "User credentials"
@@ -131,14 +175,6 @@ ask_value "Hostname" "${HOSTNAME}"
 HOSTNAME="${REPLY}"
 
 # Timezone is not a preset value — it must always be chosen at install time.
-# Try to detect the local timezone from IP geolocation; fall back to UTC.
-_detected_tz=""
-if _detected_tz=$(curl -fsSL --max-time 5 "https://ipapi.co/timezone" 2>/dev/null) \
-        && [[ -f "/usr/share/zoneinfo/${_detected_tz}" ]]; then
-    info "Detected timezone: ${_detected_tz}"
-else
-    _detected_tz="UTC"
-fi
 while true; do
     ask_value "Timezone" "${TIMEZONE:-${_detected_tz}}"
     if [[ -f "/usr/share/zoneinfo/${REPLY}" ]]; then
@@ -148,7 +184,7 @@ while true; do
     warn "Unknown timezone '${REPLY}'. Check /usr/share/zoneinfo/ for valid entries."
 done
 
-# Swap type and size — skip prompts when already set by a preset
+# Swap type and size — prompt only when not already set by a preset
 if [[ -z "${SWAP_TYPE:-}" ]]; then
     while true; do
         ask_value "Swap type (file, partition, none)" "file"
@@ -167,26 +203,6 @@ if [[ -z "${SWAP_TYPE:-}" ]]; then
             fi
             warn "Invalid swap size. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
         done
-    fi
-else
-    case "${SWAP_TYPE,,}" in
-        file|partition|none) SWAP_TYPE="${SWAP_TYPE,,}" ;;
-        *)
-            die "Invalid SWAP_TYPE in preset/config: '${SWAP_TYPE}'. Expected: file, partition, or none."
-            ;;
-    esac
-
-    if [[ "${SWAP_TYPE}" != "none" ]]; then
-        if [[ -z "${SWAP_SIZE}" ]]; then
-            die "SWAP_SIZE must be set in preset/config when SWAP_TYPE is '${SWAP_TYPE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
-        fi
-        if [[ ! "${SWAP_SIZE}" =~ ^[1-9][0-9]*[MmGg]$ ]]; then
-            die "Invalid SWAP_SIZE in preset/config: '${SWAP_SIZE}'. Enter a positive integer followed by M or G (e.g. 4096M or 16G)."
-        fi
-        SWAP_SIZE="${SWAP_SIZE^^}"
-        info "Using swap configuration from preset: type=${SWAP_TYPE}, size=${SWAP_SIZE}"
-    else
-        info "Using swap configuration from preset: type=${SWAP_TYPE}"
     fi
 fi
 
