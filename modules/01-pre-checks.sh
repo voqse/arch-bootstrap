@@ -12,23 +12,26 @@ else
     die "UEFI boot mode not detected. This script requires UEFI."
 fi
 
-# Internet connectivity
-info "Checking internet connectivity..."
-if ping -c 1 -W 5 archlinux.org &>/dev/null; then
-    success "Internet connection is available."
-else
-    die "No internet connection. Please connect and retry."
-fi
+# Internet connectivity and NTP sync — only relevant on the live ISO.
+# When running from a local checkout (development/testing) these checks are
+# skipped so the script can be exercised without a network connection.
+if [[ "${SCRIPT_DIR}" == "${_CLONE_DIR}" ]]; then
+    info "Checking internet connectivity..."
+    if ping -c 1 -W 5 archlinux.org &>/dev/null; then
+        success "Internet connection is available."
+    else
+        die "No internet connection. Please connect and retry."
+    fi
 
-# System clock
-info "Enabling NTP and syncing system clock..."
-run timedatectl set-ntp true
-sleep 2
-_ntp_status=$(timedatectl show -p NTPSynchronized --value 2>/dev/null || echo "unknown")
-if [[ "$_ntp_status" == "yes" ]]; then
-    success "Clock synchronised via NTP."
-else
-    warn "NTP sync status: ${_ntp_status}. Continuing anyway."
-fi
+    info "Enabling NTP and syncing system clock..."
+    run timedatectl set-ntp true
+    sleep 2
+    _ntp_status=$(timedatectl show -p NTPSynchronized --value 2>/dev/null || echo "unknown")
+    if [[ "$_ntp_status" == "yes" ]]; then
+        success "Clock synchronised via NTP."
+    else
+        warn "NTP sync status: ${_ntp_status}. Continuing anyway."
+    fi
 
-info "Current system time: $(date)"
+    info "Current system time: $(date)"
+fi
