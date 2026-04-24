@@ -17,7 +17,7 @@ fi
 # skipped so the script can be exercised without a network connection.
 if [[ "${SCRIPT_DIR}" == "${_CLONE_DIR}" ]]; then
     info "Checking internet connectivity..."
-    if ping -c 1 -W 5 archlinux.org &>/dev/null; then
+    if curl -s -o /dev/null -w "%{http_code}" https://example.com; then
         success "Internet connection is available."
     else
         die "No internet connection. Please connect and retry."
