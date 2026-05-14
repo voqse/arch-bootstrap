@@ -118,6 +118,34 @@ _has_package() {
     return 1
 }
 
+# shellcheck disable=SC2034 # Sourced by modules/hooks that share this path constant.
+SUSPEND_THEN_HIBERNATE_SERVICE="/usr/lib/systemd/system/systemd-suspend-then-hibernate.service"
+
+# Returns 0 and prints a reason token when suspend-then-hibernate prerequisites
+# are not met. Returns 1 when hibernate configuration should proceed.
+hibernate_prereq_failure() {
+    if [[ -z "${HIBERNATE_DELAY:-}" ]]; then
+        echo "HIBERNATE_DELAY_UNSET"
+        return 0
+    fi
+
+    if [[ "${SWAP_TYPE:-file}" == "none" ]]; then
+        echo "SWAP_DISABLED"
+        return 0
+    fi
+
+    if ! _has_package power-profiles-daemon; then
+        echo "POWER_PROFILES_DAEMON_MISSING"
+        return 0
+    fi
+
+    return 1
+}
+
+hibernate_is_enabled() {
+    ! hibernate_prereq_failure >/dev/null
+}
+
 # Section header
 section() {
     echo

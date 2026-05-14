@@ -7,18 +7,20 @@
 #   - swap (SWAP_TYPE != none) — the hibernate target to write memory to
 #   - power-profiles-daemon in PACKAGES — indicates a battery-powered laptop
 
-if [[ -z "${HIBERNATE_DELAY:-}" ]]; then
-    return
-fi
-
-if [[ "${SWAP_TYPE:-file}" == "none" ]]; then
-    warn "HIBERNATE_DELAY is set but SWAP_TYPE=none — skipping hibernate configuration (no swap to hibernate to)."
-    return
-fi
-
-if ! _has_package power-profiles-daemon; then
-    warn "HIBERNATE_DELAY is set but power-profiles-daemon is not in PACKAGES — skipping hibernate configuration."
-    return
+if _hibernate_skip_reason="$(hibernate_prereq_failure)"; then
+    case "${_hibernate_skip_reason}" in
+        HIBERNATE_DELAY_UNSET)
+            return
+            ;;
+        SWAP_DISABLED)
+            warn "HIBERNATE_DELAY is set but SWAP_TYPE=none — skipping hibernate configuration (no swap to hibernate to)."
+            return
+            ;;
+        POWER_PROFILES_DAEMON_MISSING)
+            warn "HIBERNATE_DELAY is set but power-profiles-daemon is not in PACKAGES — skipping hibernate configuration."
+            return
+            ;;
+    esac
 fi
 
 # hooks/gnome-shell.sh runs earlier than this module and may already have
@@ -26,7 +28,7 @@ fi
 # here, remove those dependent overrides so the final system stays consistent.
 _cleanup_gnome_hibernate_tweaks() {
     if [[ -L /etc/systemd/system/systemd-suspend.service ]] && \
-        [[ "$(readlink /etc/systemd/system/systemd-suspend.service)" == "/usr/lib/systemd/system/systemd-suspend-then-hibernate.service" ]]; then
+        [[ "$(readlink /etc/systemd/system/systemd-suspend.service)" == "${SUSPEND_THEN_HIBERNATE_SERVICE}" ]]; then
         rm -f /etc/systemd/system/systemd-suspend.service
     fi
 
