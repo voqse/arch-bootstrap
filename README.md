@@ -111,7 +111,7 @@ arch-bootstrap/
     ├── greetd.sh             # Enables greetd and launches niri-session via agreety
     ├── networkmanager.sh     # Enables NetworkManager + dispatcher; sets iwd as Wi-Fi backend
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
-    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; sets bgrt theme
+    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; adds splash cmdline; sets bgrt theme
     ├── tlp.sh                # Enables tlp.service
     └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
 ```

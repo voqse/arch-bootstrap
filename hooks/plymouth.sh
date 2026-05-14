@@ -17,12 +17,25 @@
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${HOOK_DIR}/../lib.sh"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/../config.sh"
 
 # Set the bgrt theme (shows OEM/UEFI firmware logo, hides distribution logo).
 # 'bgrt' is bundled with the plymouth package, so it is always available.
 # Run unconditionally so the theme is applied even when the mkinitcpio hook
 # was already inserted by a previous run.
 plymouth-set-default-theme bgrt
+
+# Ensure the boot entry enables the Plymouth splash screen at boot.
+_esp="${EFI_MOUNTPOINT:-/boot}"
+_loader_entry="${_esp}/loader/entries/arch.conf"
+if [[ -f "${_loader_entry}" ]]; then
+    if ! grep -Eq '^options .*(^|[[:space:]])splash([[:space:]]|$)' "${_loader_entry}"; then
+        sed -i '/^options / s/$/ splash/' "${_loader_entry}"
+    fi
+else
+    warn "plymouth hook: loader entry not found at ${_loader_entry}; skipping splash kernel parameter."
+fi
 
 if mkinitcpio_has_hook plymouth; then
     exit 0

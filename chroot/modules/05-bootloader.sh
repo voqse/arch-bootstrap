@@ -36,9 +36,6 @@ EOF
 
     # Kernel command line — include swap resume offset for swapfile hibernation
     local cmdline="root=UUID=${root_uuid} rw quiet"
-    if _has_package "plymouth"; then
-        cmdline+=" splash"
-    fi
     if [[ "${SWAP_TYPE:-file}" == "file" && -n "${SWAP_FILE:-}" ]]; then
         local swap_offset
         # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
