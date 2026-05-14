@@ -112,6 +112,7 @@ arch-bootstrap/
     ├── networkmanager.sh     # Enables NetworkManager; sets iwd as Wi-Fi backend
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
     ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; adds splash cmdline; sets bgrt theme
+    ├── tlp-pd.sh             # Enables tlp-pd.service for desktop power-profile integration
     ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service for tlp-rdw
     ├── tlp.sh                # Enables tlp.service
     └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
@@ -199,6 +200,7 @@ PACKAGES=(            # Additional packages; optionally with a config hook
     "ufw:ufw"                     # explicit hook → runs hooks/ufw.sh
     "greetd"                      # auto hook  → runs hooks/greetd.sh
     "tlp"                         # auto hook  → runs hooks/tlp.sh
+    "tlp-pd"                      # auto hook  → runs hooks/tlp-pd.sh
     "tlp-rdw"                     # auto hook  → runs hooks/tlp-rdw.sh
 )
 ```
