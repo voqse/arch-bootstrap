@@ -113,8 +113,8 @@ arch-bootstrap/
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
     ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; adds splash cmdline; sets bgrt theme
     ├── tlp-pd.sh             # Enables tlp-pd.service for desktop power-profile integration
-    ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service for tlp-rdw
-    ├── tlp.sh                # Enables tlp.service and masks systemd-rfkill units
+    ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service; masks systemd-rfkill
+    ├── tlp.sh                # Enables tlp.service
     └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
 ```
 
