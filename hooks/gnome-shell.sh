@@ -6,6 +6,14 @@
 #   - Solid #152131 top panel via a minimal system-level shell extension
 #   - Enables AppIndicator tray icon extension
 #   - Custom keyboard shortcuts: Ctrl+Alt+T (terminal), Ctrl+Shift+Esc (btop)
+#   - GNOME power/suspend overrides when suspend-then-hibernate is enabled
+
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/../lib.sh"
+# shellcheck source=/dev/null
+source "${HOOK_DIR}/../config.sh"
 
 # 1. User sessions — system-wide dconf local override
 mkdir -p /etc/dconf/profile
@@ -49,10 +57,37 @@ command='kgx -- btop'
 name='Task Manager'
 EOF
 
-# 3. Compile dconf databases
+# 3. GNOME power settings — only when suspend-then-hibernate is configured.
+if [[ -n "${HIBERNATE_DELAY:-}" ]] && [[ "${SWAP_TYPE:-file}" != "none" ]] && _has_package power-profiles-daemon; then
+    mkdir -p /etc/systemd/system
+    ln -sf /usr/lib/systemd/system/systemd-suspend-then-hibernate.service \
+        /etc/systemd/system/systemd-suspend.service
+    success "Symlinked systemd-suspend.service → systemd-suspend-then-hibernate.service for GNOME."
+
+    cat > /etc/dconf/db/local.d/03-power <<'EOF'
+[org/gnome/desktop/session]
+# Blank screen after 5 minutes (300 s) of inactivity
+idle-delay=uint32 300
+
+[org/gnome/settings-daemon/plugins/power]
+# Do not dim the screen before blanking
+idle-dim=false
+# Battery: suspend after 15 minutes (900 s) of inactivity.
+# Note: this is the idle-to-sleep delay, independent of HibernateDelaySec
+# (the sleep-to-hibernate delay set in sleep.conf.d/hibernate-delay.conf).
+sleep-inactive-battery-timeout=900
+sleep-inactive-battery-type='suspend'
+# AC: never auto-suspend
+sleep-inactive-ac-timeout=0
+sleep-inactive-ac-type='nothing'
+EOF
+    success "GNOME power settings written to /etc/dconf/db/local.d/03-power."
+fi
+
+# 4. Compile dconf databases
 dconf update
 
-# 4. Hide noisy utility entries from the app menu
+# 5. Hide noisy utility entries from the app menu
 # Copy each upstream .desktop file and append NoDisplay=true so that avahi
 # browser tools and V4L utilities do not appear in GNOME Shell search or the
 # application grid.  /usr/local/share/applications takes precedence over

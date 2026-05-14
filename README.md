@@ -107,7 +107,7 @@ arch-bootstrap/
     ├── docker.sh             # Adds install user to the docker group; enables docker.socket
     ├── fwupd.sh              # Enables fwupd-refresh.timer
     ├── gdm.sh                # Enables GDM (display manager)
-    ├── gnome-shell.sh        # GNOME appearance — background, extensions, keyboard shortcuts
+    ├── gnome-shell.sh        # GNOME appearance, shortcuts, and GNOME-specific power tweaks
     ├── greetd.sh             # Enables greetd and launches niri-session via agreety
     ├── networkmanager.sh     # Enables NetworkManager; sets iwd as Wi-Fi backend
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
@@ -212,7 +212,7 @@ directory. Two ways to attach one:
 
 ```bash
 # hooks/gnome-shell.sh — runs automatically after gnome-shell is installed
-# (writes dconf overrides to /etc/dconf/db/local.d/ then compiles them)
+# (writes GNOME dconf overrides; also adds GNOME hibernate tweaks when enabled)
 dconf update
 
 # hooks/ufw.sh — called via explicit "ufw:ufw"
