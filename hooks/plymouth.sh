@@ -27,6 +27,7 @@ source "${HOOK_DIR}/../config.sh"
 plymouth-set-default-theme bgrt
 
 # Ensure the boot entry enables the Plymouth splash screen at boot.
+# config.sh provides EFI_MOUNTPOINT; default to /boot when it is unset.
 _esp="${EFI_MOUNTPOINT:-/boot}"
 _loader_default="arch.conf"
 _loader_conf="${_esp}/loader/loader.conf"
@@ -37,17 +38,44 @@ _loader_default="${_loader_default:-arch.conf}"
 
 _loader_entry="${_esp}/loader/entries/${_loader_default}"
 if [[ -f "${_loader_entry}" ]]; then
-    if ! grep -Eq '^options .*(^|[[:space:]])splash([[:space:]]|$)' "${_loader_entry}"; then
-        _tmp_loader_entry="$(mktemp -p "$(dirname "${_loader_entry}")" "$(basename "${_loader_entry}").XXXXXX")"
-        if awk '
-            BEGIN { updated = 0 }
-            /^options / && !updated { print $0 " splash"; updated = 1; next }
-            { print }
-            END { exit(updated ? 0 : 1) }
-        ' "${_loader_entry}" > "${_tmp_loader_entry}"; then
-            mv "${_tmp_loader_entry}" "${_loader_entry}"
-        else
+    _tmp_loader_entry="$(mktemp -p "$(dirname "${_loader_entry}")" "$(basename "${_loader_entry}").XXXXXX")"
+    if awk '
+        BEGIN { saw_options = 0; saw_splash = 0; updated = 0 }
+        {
+            lines[NR] = $0
+            if ($0 ~ /^options /) {
+                saw_options = 1
+                if ($0 ~ /(^|[[:space:]])splash([[:space:]]|$)/) {
+                    saw_splash = 1
+                }
+            }
+        }
+        END {
+            if (!saw_options) {
+                exit 2
+            }
+
+            for (i = 1; i <= NR; i++) {
+                if (!saw_splash && !updated && lines[i] ~ /^options /) {
+                    print lines[i] " splash"
+                    updated = 1
+                } else {
+                    print lines[i]
+                }
+            }
+        }
+    ' "${_loader_entry}" > "${_tmp_loader_entry}"; then
+        if cmp -s "${_loader_entry}" "${_tmp_loader_entry}"; then
             rm -f "${_tmp_loader_entry}"
+        else
+            mv "${_tmp_loader_entry}" "${_loader_entry}"
+        fi
+    else
+        _rc=$?
+        rm -f "${_tmp_loader_entry}"
+        if [[ ${_rc} -eq 2 ]]; then
+            warn "plymouth hook: no 'options' line found in ${_loader_entry}; skipping splash kernel parameter."
+        else
             warn "plymouth hook: failed to update kernel options in ${_loader_entry}."
         fi
     fi
