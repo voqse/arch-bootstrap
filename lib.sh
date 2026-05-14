@@ -134,11 +134,6 @@ get_hibernate_skip_reason() {
         return 0
     fi
 
-    if ! _has_package power-profiles-daemon; then
-        echo "POWER_PROFILES_DAEMON_MISSING"
-        return 0
-    fi
-
     return 1
 }
 

@@ -3,9 +3,9 @@
 # When HIBERNATE_DELAY is set, configures suspend-then-hibernate so that the
 # system automatically hibernates after being suspended for that long.
 #
-# Requires both:
+# Requires:
+#   - HIBERNATE_DELAY to opt in
 #   - swap (SWAP_TYPE != none) — the hibernate target to write memory to
-#   - power-profiles-daemon in PACKAGES — indicates a battery-powered laptop
 
 if _hibernate_skip_reason="$(get_hibernate_skip_reason)"; then
     case "${_hibernate_skip_reason}" in
@@ -14,10 +14,6 @@ if _hibernate_skip_reason="$(get_hibernate_skip_reason)"; then
             ;;
         SWAP_DISABLED)
             warn "HIBERNATE_DELAY is set but SWAP_TYPE=none — skipping hibernate configuration (no swap to hibernate to)."
-            return
-            ;;
-        POWER_PROFILES_DAEMON_MISSING)
-            warn "HIBERNATE_DELAY is set but power-profiles-daemon is not in PACKAGES — skipping hibernate configuration."
             return
             ;;
     esac
