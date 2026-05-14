@@ -32,14 +32,19 @@ _esp="${EFI_MOUNTPOINT:-/boot}"
 _loader_default="arch.conf"
 _loader_conf="${_esp}/loader/loader.conf"
 if [[ -f "${_loader_conf}" ]]; then
-    _loader_default="$(awk '$1 == "default" { print $2; exit }' "${_loader_conf}")"
+    if ! _loader_default="$(awk '$1 == "default" { print $2; exit }' "${_loader_conf}")"; then
+        warn "plymouth hook: failed to read ${_loader_conf}; falling back to ${_loader_default}."
+    fi
 fi
 _loader_default="${_loader_default:-arch.conf}"
 
 _loader_entry="${_esp}/loader/entries/${_loader_default}"
 if [[ -f "${_loader_entry}" ]]; then
-    _tmp_loader_entry="$(mktemp -p "$(dirname "${_loader_entry}")" "$(basename "${_loader_entry}").XXXXXX")"
-    if awk '
+    if ! _tmp_loader_entry="$(mktemp -p "$(dirname "${_loader_entry}")" "$(basename "${_loader_entry}").XXXXXX")"; then
+        warn "plymouth hook: failed to create a temporary file next to ${_loader_entry}; skipping splash kernel parameter."
+        _tmp_loader_entry=""
+    fi
+    if [[ -n "${_tmp_loader_entry}" ]] && awk '
         BEGIN { saw_options = 0; saw_splash = 0; updated = 0 }
         {
             lines[NR] = $0
@@ -74,7 +79,7 @@ if [[ -f "${_loader_entry}" ]]; then
         _rc=$?
         rm -f "${_tmp_loader_entry}"
         if [[ ${_rc} -eq 2 ]]; then
-            warn "plymouth hook: no 'options' line found in ${_loader_entry}; skipping splash kernel parameter."
+            warn "plymouth hook: no 'options' line found in ${_loader_entry}; add one manually or verify the boot loader configuration."
         else
             warn "plymouth hook: failed to update kernel options in ${_loader_entry}."
         fi
