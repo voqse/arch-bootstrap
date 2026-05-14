@@ -30,8 +30,8 @@ success "LANG=${LANG} written to /etc/locale.conf."
 {
     echo "KEYMAP=${KEYMAP}"
     echo "FONT=${FONT}"
-    # GDM (and Xorg/Wayland sessions) use XKBLAYOUT, not KEYMAP.
-    # Ref: https://wiki.archlinux.org/title/GDM#Keyboard_layout
+    # Some graphical login/session tools read XKBLAYOUT/XKBOPTIONS from
+    # vconsole.conf; keep exporting them when present.
     [[ -n "${XKBLAYOUT:-}" ]] && echo "XKBLAYOUT=${XKBLAYOUT}"
     [[ -n "${XKBOPTIONS:-}" ]] && echo "XKBOPTIONS=${XKBOPTIONS}"
 } > /etc/vconsole.conf
