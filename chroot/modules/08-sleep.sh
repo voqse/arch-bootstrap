@@ -21,6 +21,9 @@ if ! _has_package power-profiles-daemon; then
     return
 fi
 
+# hooks/gnome-shell.sh runs earlier than this module and may already have
+# written GNOME-specific hibernate overrides. If generic hibernate setup fails
+# here, remove those dependent overrides so the final system stays consistent.
 _cleanup_gnome_hibernate_tweaks() {
     if [[ -L /etc/systemd/system/systemd-suspend.service ]] && \
         [[ "$(readlink /etc/systemd/system/systemd-suspend.service)" == "/usr/lib/systemd/system/systemd-suspend-then-hibernate.service" ]]; then

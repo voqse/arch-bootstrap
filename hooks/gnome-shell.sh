@@ -58,6 +58,8 @@ name='Task Manager'
 EOF
 
 # 3. GNOME power settings — only when suspend-then-hibernate is configured.
+# Mirror the same prerequisites as chroot/modules/08-sleep.sh so GNOME-specific
+# overrides are only written for laptop-style presets that actually enable it.
 if [[ -n "${HIBERNATE_DELAY:-}" ]] && [[ "${SWAP_TYPE:-file}" != "none" ]] && _has_package power-profiles-daemon; then
     mkdir -p /etc/systemd/system
     ln -sf /usr/lib/systemd/system/systemd-suspend-then-hibernate.service \
