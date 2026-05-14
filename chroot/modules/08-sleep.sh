@@ -24,7 +24,8 @@ fi
 _has_gnome_shell=false
 if _has_package gnome-shell; then
     _has_gnome_shell=true
-else
+fi
+if [[ "${_has_gnome_shell}" != true ]]; then
     info "gnome-shell is not installed; skipping GNOME-specific suspend and power dconf tweaks."
 fi
 
