@@ -109,7 +109,7 @@ arch-bootstrap/
     ├── gdm.sh                # Enables GDM (display manager)
     ├── gnome-shell.sh        # GNOME appearance, shortcuts, and GNOME-specific power tweaks
     ├── greetd.sh             # Enables greetd and launches niri-session via agreety
-    ├── networkmanager.sh     # Enables NetworkManager + dispatcher; sets iwd as Wi‑Fi backend
+    ├── networkmanager.sh     # Enables NetworkManager + dispatcher; sets iwd as Wi-Fi backend
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
     ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; sets bgrt theme
     ├── tlp.sh                # Enables tlp.service
