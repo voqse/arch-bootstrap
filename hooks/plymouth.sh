@@ -28,10 +28,28 @@ plymouth-set-default-theme bgrt
 
 # Ensure the boot entry enables the Plymouth splash screen at boot.
 _esp="${EFI_MOUNTPOINT:-/boot}"
-_loader_entry="${_esp}/loader/entries/arch.conf"
+_loader_default="arch.conf"
+_loader_conf="${_esp}/loader/loader.conf"
+if [[ -f "${_loader_conf}" ]]; then
+    _loader_default="$(awk '$1 == "default" { print $2; exit }' "${_loader_conf}")"
+fi
+_loader_default="${_loader_default:-arch.conf}"
+
+_loader_entry="${_esp}/loader/entries/${_loader_default}"
 if [[ -f "${_loader_entry}" ]]; then
-    if ! grep -Eq '^options .*(^|[[:space:]])splash([[:space:]]|$)' "${_loader_entry}"; then
-        sed -i '/^options / s/$/ splash/' "${_loader_entry}"
+    if ! grep -Eq '^options .*([[:space:]]|^)splash([[:space:]]|$)' "${_loader_entry}"; then
+        _tmp_loader_entry="$(mktemp "${_loader_entry}.XXXXXX")"
+        if awk '
+            BEGIN { updated = 0 }
+            /^options / && !updated { print $0 " splash"; updated = 1; next }
+            { print }
+            END { exit(updated ? 0 : 1) }
+        ' "${_loader_entry}" > "${_tmp_loader_entry}"; then
+            mv "${_tmp_loader_entry}" "${_loader_entry}"
+        else
+            rm -f "${_tmp_loader_entry}"
+            warn "plymouth hook: failed to update kernel options in ${_loader_entry}."
+        fi
     fi
 else
     warn "plymouth hook: loader entry not found at ${_loader_entry}; skipping splash kernel parameter."
