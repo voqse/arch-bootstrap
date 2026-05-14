@@ -7,7 +7,7 @@
 #   - swap (SWAP_TYPE != none) — the hibernate target to write memory to
 #   - power-profiles-daemon in PACKAGES — indicates a battery-powered laptop
 
-if _hibernate_skip_reason="$(hibernate_prereq_failure)"; then
+if _hibernate_skip_reason="$(get_hibernate_skip_reason)"; then
     case "${_hibernate_skip_reason}" in
         HIBERNATE_DELAY_UNSET)
             return

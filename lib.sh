@@ -123,7 +123,7 @@ SUSPEND_THEN_HIBERNATE_SERVICE="/usr/lib/systemd/system/systemd-suspend-then-hib
 
 # Returns 0 and prints a reason token when suspend-then-hibernate prerequisites
 # are not met. Returns 1 when hibernate configuration should proceed.
-hibernate_prereq_failure() {
+get_hibernate_skip_reason() {
     if [[ -z "${HIBERNATE_DELAY:-}" ]]; then
         echo "HIBERNATE_DELAY_UNSET"
         return 0
@@ -143,7 +143,7 @@ hibernate_prereq_failure() {
 }
 
 hibernate_is_enabled() {
-    ! hibernate_prereq_failure >/dev/null
+    ! get_hibernate_skip_reason >/dev/null
 }
 
 # Section header
