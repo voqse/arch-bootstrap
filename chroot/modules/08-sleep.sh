@@ -21,6 +21,13 @@ if ! _has_package power-profiles-daemon; then
     return
 fi
 
+_has_gnome_shell=false
+if _has_package gnome-shell; then
+    _has_gnome_shell=true
+else
+    info "gnome-shell is not installed; skipping GNOME-specific suspend and power dconf tweaks."
+fi
+
 section "Configuring suspend-then-hibernate (delay: ${HIBERNATE_DELAY})"
 
 # systemd sleep: set HibernateDelaySec
@@ -54,7 +61,7 @@ fi
 # systemd-suspend.service to systemd-suspend-then-hibernate.service makes
 # every low-level suspend request trigger suspend-then-hibernate instead.
 # Ref: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Suspend_then_hibernate
-if _has_package gnome-shell; then
+if [[ "${_has_gnome_shell}" == true ]]; then
     mkdir -p /etc/systemd/system
     ln -sf /usr/lib/systemd/system/systemd-suspend-then-hibernate.service \
         /etc/systemd/system/systemd-suspend.service
@@ -75,7 +82,7 @@ success "logind configured: lid-close on battery=suspend-then-hibernate, lid-clo
 # Battery: blank screen at 5 min, sleep at 15 min; AC: blank screen at 5 min, no sleep.
 # Dimming before blank is disabled so the screen switches off cleanly.
 # Ref: https://wiki.archlinux.org/title/GNOME/Tips_and_tricks#Power_management
-if _has_package gnome-shell; then
+if [[ "${_has_gnome_shell}" == true ]]; then
     mkdir -p /etc/dconf/db/local.d
     cat > /etc/dconf/db/local.d/03-power <<'EOF'
 [org/gnome/desktop/session]
