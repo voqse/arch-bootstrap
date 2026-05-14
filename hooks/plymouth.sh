@@ -37,8 +37,8 @@ _loader_default="${_loader_default:-arch.conf}"
 
 _loader_entry="${_esp}/loader/entries/${_loader_default}"
 if [[ -f "${_loader_entry}" ]]; then
-    if ! grep -Eq '^options .*([[:space:]]|^)splash([[:space:]]|$)' "${_loader_entry}"; then
-        _tmp_loader_entry="$(mktemp "${_loader_entry}.XXXXXX")"
+    if ! grep -Eq '^options .*(^|[[:space:]])splash([[:space:]]|$)' "${_loader_entry}"; then
+        _tmp_loader_entry="$(mktemp -p "$(dirname "${_loader_entry}")" "$(basename "${_loader_entry}").XXXXXX")"
         if awk '
             BEGIN { updated = 0 }
             /^options / && !updated { print $0 " splash"; updated = 1; next }
