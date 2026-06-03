@@ -76,8 +76,8 @@ arch-bootstrap/
 │
 ├── config/
 │   ├── default.conf          # Base preset — start here for a new machine
-│   ├── matebook.conf         # Huawei MateBook D16 2021 (Ryzen 4600H / GNOME)
-│   └── station.conf          # Desktop workstation (Ryzen 5800X3D / RTX 4070 Ti / GNOME)
+│   ├── matebook.conf         # Huawei MateBook D16 2021 (Ryzen 4600H / Niri)
+│   └── station.conf          # Desktop workstation (Ryzen 5800X3D / RTX 4070 Ti / Niri)
 │
 ├── modules/                  # Pre-chroot pipeline (runs on the live ISO)
 │   ├── 01-pre-checks.sh      # Verify UEFI, internet, NTP
@@ -107,11 +107,14 @@ arch-bootstrap/
     ├── docker.sh             # Adds install user to the docker group; enables docker.socket
     ├── fwupd.sh              # Enables fwupd-refresh.timer
     ├── gdm.sh                # Enables GDM (display manager)
-    ├── gnome-shell.sh        # GNOME appearance — background, extensions, keyboard shortcuts
+    ├── gnome-shell.sh        # GNOME appearance, shortcuts, and GNOME-specific power tweaks
+    ├── greetd.sh             # Enables greetd and launches niri-session via agreety
     ├── networkmanager.sh     # Enables NetworkManager; sets iwd as Wi-Fi backend
     ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
-    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; sets bgrt theme
-    ├── power-profiles-daemon.sh # Enables power-profiles-daemon
+    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; adds splash cmdline; sets bgrt theme
+    ├── tlp-pd.sh             # Enables tlp-pd.service for desktop power-profile integration
+    ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service; masks systemd-rfkill
+    ├── tlp.sh                # Enables tlp.service
     └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
 ```
 
@@ -134,7 +137,7 @@ bash bootstrap.sh --config config/my.conf
 | `LANG`        | System-wide language (`LANG=`)       | `en_US.UTF-8`                    |
 | `KEYMAP`      | Console keymap (`vconsole.conf`)     | `ruwin_alt_sh-UTF-8`             |
 | `FONT`        | Console font (`vconsole.conf`)       | `cyr-sun16`                      |
-| `XKBLAYOUT`   | X11/Wayland keyboard layout (used by GDM) | `us,ru`                    |
+| `XKBLAYOUT`   | Optional X11/Wayland keyboard layout exported to `vconsole.conf` | `us,ru` |
 | `XKBOPTIONS`  | X11/Wayland keyboard options         | `grp:alt_shift_toggle`           |
 
 > **Timezone is not a preset value.**
@@ -193,9 +196,12 @@ BASE_PACKAGES=(       # Passed to pacstrap first; always installed
 )
 
 PACKAGES=(            # Additional packages; optionally with a config hook
-    "networkmanager"              # plain — no hook
+    "networkmanager"              # auto hook  → runs hooks/networkmanager.sh
     "ufw:ufw"                     # explicit hook → runs hooks/ufw.sh
-    "gnome-shell"                 # auto hook  → runs hooks/gnome-shell.sh
+    "greetd"                      # auto hook  → runs hooks/greetd.sh
+    "tlp"                         # auto hook  → runs hooks/tlp.sh
+    "tlp-pd"                      # auto hook  → runs hooks/tlp-pd.sh
+    "tlp-rdw"                     # auto hook  → runs hooks/tlp-rdw.sh
 )
 ```
 
@@ -211,7 +217,7 @@ directory. Two ways to attach one:
 
 ```bash
 # hooks/gnome-shell.sh — runs automatically after gnome-shell is installed
-# (writes dconf overrides to /etc/dconf/db/local.d/ then compiles them)
+# (writes GNOME dconf overrides; also adds GNOME hibernate tweaks when enabled)
 dconf update
 
 # hooks/ufw.sh — called via explicit "ufw:ufw"
@@ -256,7 +262,7 @@ Each entry is passed verbatim to `systemctl enable` inside the chroot.
 
 > **Note:** Services tied to a specific package are enabled inside that package's
 > hook script rather than here. For example `bluez.sh` enables `bluetooth`,
-> `gdm.sh` enables `gdm`, `networkmanager.sh` enables `NetworkManager`, and so on.
+> `greetd.sh` enables `greetd`, `networkmanager.sh` enables `NetworkManager`, and so on.
 
 ---
 
@@ -280,13 +286,13 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 | Setting | Value |
 |---------|-------|
 | Hostname | matebook |
-| Desktop | GNOME (Wayland / GDM) |
+| Desktop | Niri (Wayland / greetd) |
 | Audio | PipeWire |
 | GPU | Mesa + vulkan-radeon + libva-mesa-driver |
 | Network | NetworkManager |
 | Bluetooth | BlueZ |
 | Firewall | UFW (deny in / allow out) |
-| Background | Solid black `#000000` (desktop + GDM) |
+| Background | Configure per-user in Niri (e.g. via `swaybg`) |
 | Boot | systemd-boot (default) — silent instant boot |
 | SSD | `fstrim.timer` enabled |
 | Firmware | `fwupd` + `fwupd-refresh.timer` |
@@ -307,7 +313,7 @@ Ready-to-use preset for a **desktop workstation**
 | Setting | Value |
 |---------|-------|
 | Hostname | station |
-| Desktop | GNOME (Wayland / GDM) |
+| Desktop | Niri (Wayland / greetd) |
 | Audio | PipeWire |
 | GPU | nvidia-open (open kernel modules) + early KMS |
 | Kernel params | `nvidia_drm.modeset=1 nvidia_drm.fbdev=1` |
@@ -315,7 +321,7 @@ Ready-to-use preset for a **desktop workstation**
 | Wi-Fi/BT | ASUS PCE-AXE59BT (MediaTek MT7922, in-kernel driver) |
 | Bluetooth | BlueZ |
 | Firewall | UFW (deny in / allow out) |
-| Background | Solid black `#000000` (desktop + GDM) |
+| Background | Configure per-user in Niri (e.g. via `swaybg`) |
 | Boot | systemd-boot (default) — silent instant boot |
 | SSD | `fstrim.timer` enabled |
 | Firmware | `fwupd` + `fwupd-refresh.timer` |

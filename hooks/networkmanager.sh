@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Hook: networkmanager
-# Enables NetworkManager service after installation.
+# Enables NetworkManager after installation.
 systemctl enable NetworkManager
-
 # Use iwd as the Wi-Fi backend for NetworkManager.
 # iwd provides robust WPA3-SAE support; NetworkManager manages iwd internally
 # so iwd.service must NOT be enabled separately.

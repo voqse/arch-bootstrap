@@ -118,6 +118,29 @@ _has_package() {
     return 1
 }
 
+# shellcheck disable=SC2034 # Sourced by modules/hooks that share this path constant.
+SUSPEND_THEN_HIBERNATE_SERVICE="/usr/lib/systemd/system/systemd-suspend-then-hibernate.service"
+
+# Returns 0 and prints a reason token when suspend-then-hibernate prerequisites
+# are not met. Returns 1 when hibernate configuration should proceed.
+get_hibernate_skip_reason() {
+    if [[ -z "${HIBERNATE_DELAY:-}" ]]; then
+        echo "HIBERNATE_DELAY_UNSET"
+        return 0
+    fi
+
+    if [[ "${SWAP_TYPE:-file}" == "none" ]]; then
+        echo "SWAP_DISABLED"
+        return 0
+    fi
+
+    return 1
+}
+
+hibernate_is_enabled() {
+    ! get_hibernate_skip_reason >/dev/null
+}
+
 # Section header
 section() {
     echo
