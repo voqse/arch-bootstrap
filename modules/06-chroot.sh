@@ -61,6 +61,12 @@ _export_config() {
         printf '%s\n' 'declare -a KERNEL_PARAMS=()'
     fi
 
+    if declare -p REFLECTOR_ARGS >/dev/null 2>&1; then
+        declare -p REFLECTOR_ARGS
+    else
+        printf '%s\n' 'declare -a REFLECTOR_ARGS=()'
+    fi
+
     if declare -p YAY_PACKAGES >/dev/null 2>&1; then
         declare -p YAY_PACKAGES
     else
