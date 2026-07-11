@@ -9,6 +9,11 @@ hostname, and timezone are always collected interactively at the start of the
 run and are never stored in preset files. Swap configuration may be defined in
 a preset to skip the interactive prompt, or left unset to be asked at runtime.
 
+The root filesystem is btrfs by default: subvolumes `@`, `@home`, `@log`,
+`@pkg`, `@snapshots` (plus `@swap` when a swapfile is requested) mounted with
+`noatime,compress=zstd`. Set `FILESYSTEM="ext4"` in a preset for a plain ext4
+root.
+
 ---
 
 ## Quick start

@@ -36,11 +36,21 @@ EOF
 
     # Kernel command line — include swap resume offset for swapfile hibernation
     local cmdline="root=UUID=${root_uuid} rw quiet"
+    if [[ "${FILESYSTEM:-btrfs}" == "btrfs" ]]; then
+        cmdline="root=UUID=${root_uuid} rootflags=subvol=@ rw quiet"
+    fi
     if [[ "${SWAP_TYPE:-file}" == "file" && -n "${SWAP_FILE:-}" ]]; then
         local swap_offset
-        # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
-        swap_offset=$(filefrag -v "${SWAP_FILE}" 2>/dev/null \
-            | awk '/^ *0:/ { sub(/:$/, "", $4); split($4, blocks, /\.\./); print blocks[1]; exit }')
+        if [[ "${FILESYSTEM:-btrfs}" == "btrfs" ]]; then
+            # filefrag reports logical extents on btrfs; the kernel needs the
+            # physical offset, which btrfs-progs computes directly.
+            # Ref: https://wiki.archlinux.org/title/Btrfs#Hibernation_into_swap_file
+            swap_offset=$(btrfs inspect-internal map-swapfile -r "${SWAP_FILE}" 2>/dev/null)
+        else
+            # Physical offset of extent 0 — matches the first data line: "   0:  0..N:  OFFSET..N:..."
+            swap_offset=$(filefrag -v "${SWAP_FILE}" 2>/dev/null \
+                | awk '/^ *0:/ { sub(/:$/, "", $4); split($4, blocks, /\.\./); print blocks[1]; exit }')
+        fi
         if [[ -n "${swap_offset}" ]]; then
             cmdline+=" resume=UUID=${root_uuid} resume_offset=${swap_offset}"
         fi

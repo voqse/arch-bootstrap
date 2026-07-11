@@ -4,14 +4,35 @@
 # Partition layouts (GPT / UEFI):
 #   SWAP_TYPE=file | none:
 #     Part 1 — 1024 MiB  EFI System Partition  (FAT32)
-#     Part 2 — remainder                        (ext4)
+#     Part 2 — remainder                        (FILESYSTEM: btrfs or ext4)
 #
 #   SWAP_TYPE=partition:
 #     Part 1 — 1024 MiB  EFI System Partition  (FAT32)
 #     Part 2 — SWAP_SIZE Linux swap             (swap)
-#     Part 3 — remainder                        (ext4)
+#     Part 3 — remainder                        (FILESYSTEM: btrfs or ext4)
+#
+# With FILESYSTEM=btrfs (default) the root partition is split into
+# subvolumes (see BTRFS_SUBVOLS below) mounted with BTRFS_MOUNT_OPTS.
+# The ESP is mounted with umask=0077 so that the systemd-boot random seed
+# is not world readable (genfstab propagates the options into fstab).
 #
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
+# Ref: https://wiki.archlinux.org/title/Btrfs#Compression
+
+# Btrfs layout — "subvolume:mountpoint" pairs; @ must stay first (mounted as /).
+# @swap is created on demand when SWAP_TYPE=file.
+BTRFS_SUBVOLS=(
+    "@:/"
+    "@home:/home"
+    "@log:/var/log"
+    "@pkg:/var/cache/pacman/pkg"
+    "@snapshots:/.snapshots"
+)
+BTRFS_MOUNT_OPTS="noatime,compress=zstd"
+
+# FAT has no Unix permissions; without a umask the ESP (and the systemd-boot
+# random seed on it) is world readable and bootctl warns about it.
+ESP_MOUNT_OPTS="umask=0077"
 
 # Helpers
 
@@ -75,14 +96,14 @@ _partition_disk() {
             mkpart ESP fat32 1MiB 1025MiB \
             set 1 esp on \
             mkpart swap linux-swap 1025MiB "$(_swap_end)" \
-            mkpart root ext4 "$(_swap_end)" 100%
+            mkpart root "${FILESYSTEM}" "$(_swap_end)" 100%
     else
         # EFI | root  (swapfile or no swap)
         run parted -s "${DISK}" \
             mklabel gpt \
             mkpart ESP fat32 1MiB 1025MiB \
             set 1 esp on \
-            mkpart root ext4 1025MiB 100%
+            mkpart root "${FILESYSTEM}" 1025MiB 100%
     fi
 
     # Let the kernel re-read the partition table
@@ -120,6 +141,23 @@ _reserved_percent() {
     echo 1
 }
 
+# Format the root partition according to FILESYSTEM.
+_format_root() {
+    local root_part="$1"
+
+    case "${FILESYSTEM}" in
+        btrfs)
+            run mkfs.btrfs -f "${root_part}"
+            ;;
+        ext4)
+            run mkfs.ext4 -F -m "$(_reserved_percent "${root_part}")" "${root_part}"
+            ;;
+        *)
+            die "Unknown FILESYSTEM '${FILESYSTEM}'. Use: btrfs, ext4."
+            ;;
+    esac
+}
+
 _format_partitions() {
     info "Formatting partitions..."
 
@@ -133,7 +171,7 @@ _format_partitions() {
 
         run mkfs.fat -F32 "${efi_part}"
         run mkswap "${swap_part}"
-        run mkfs.ext4 -F -m "$(_reserved_percent "${root_part}")" "${root_part}"
+        _format_root "${root_part}"
 
         EFI_PART="${efi_part}"
         SWAP_PART="${swap_part}"
@@ -142,7 +180,7 @@ _format_partitions() {
         root_part=$(_part 2)
 
         run mkfs.fat -F32 "${efi_part}"
-        run mkfs.ext4 -F -m "$(_reserved_percent "${root_part}")" "${root_part}"
+        _format_root "${root_part}"
 
         EFI_PART="${efi_part}"
         SWAP_PART=""
@@ -152,14 +190,54 @@ _format_partitions() {
     success "Partitions formatted."
 }
 
+# Create the btrfs subvolume layout and mount every subvolume in place.
+_mount_btrfs() {
+    info "Creating btrfs subvolumes..."
+
+    run mount "${ROOT_PART}" /mnt
+
+    local entry subvol target
+    for entry in "${BTRFS_SUBVOLS[@]}"; do
+        run btrfs subvolume create "/mnt/${entry%%:*}"
+    done
+
+    # Swapfiles must live outside the snapshotted root subvolume: btrfs
+    # refuses to snapshot a subvolume that contains an active swapfile.
+    if [[ "${SWAP_TYPE:-file}" == "file" ]]; then
+        run btrfs subvolume create /mnt/@swap
+    fi
+
+    run umount /mnt
+
+    info "Mounting subvolumes..."
+    for entry in "${BTRFS_SUBVOLS[@]}"; do
+        subvol="${entry%%:*}"
+        target="${entry#*:}"
+        [[ "${target}" == "/" ]] && target=""
+        run mkdir -p "/mnt${target}"
+        run mount -o "${BTRFS_MOUNT_OPTS},subvol=${subvol}" "${ROOT_PART}" "/mnt${target:-/}"
+    done
+
+    # No compression on the swap subvolume: swapfiles require NOCOW, which
+    # is incompatible with compression anyway.
+    if [[ "${SWAP_TYPE:-file}" == "file" ]]; then
+        run mkdir -p /mnt/swap
+        run mount -o "noatime,subvol=@swap" "${ROOT_PART}" /mnt/swap
+    fi
+}
+
 _mount_partitions() {
     info "Mounting partitions..."
 
     local efi_mountpoint="${EFI_MOUNTPOINT:-/boot}"
 
-    run mount "${ROOT_PART}" /mnt
+    if [[ "${FILESYSTEM}" == "btrfs" ]]; then
+        _mount_btrfs
+    else
+        run mount "${ROOT_PART}" /mnt
+    fi
     run mkdir -p "/mnt${efi_mountpoint}"
-    run mount "${EFI_PART}" "/mnt${efi_mountpoint}"
+    run mount -o "${ESP_MOUNT_OPTS}" "${EFI_PART}" "/mnt${efi_mountpoint}"
 
     case "${SWAP_TYPE:-file}" in
         partition)
@@ -186,14 +264,18 @@ _create_swapfile() {
 
     info "Creating swapfile (${swap_size}) at ${swap_path}..."
 
-    run mkdir -p /mnt/swap
+    if [[ "${FILESYSTEM}" == "btrfs" ]]; then
+        # /mnt/swap is the dedicated @swap subvolume mounted by _mount_btrfs.
+        # mkswapfile handles NOCOW, preallocation and mkswap in one step.
+        # Ref: https://wiki.archlinux.org/title/Btrfs#Swap_file
+        run btrfs filesystem mkswapfile --size "${swap_size}" "${swap_path}"
+    else
+        run mkdir -p /mnt/swap
+        run fallocate -l "${swap_size}" "${swap_path}"
+        run chmod 600 "${swap_path}"
+        run mkswap "${swap_path}"
+    fi
 
-    # Disable Copy-on-Write for the swap directory (no-op on ext4, safe on btrfs)
-    chattr +C /mnt/swap 2>/dev/null || true
-
-    run fallocate -l "${swap_size}" "${swap_path}"
-    run chmod 600 "${swap_path}"
-    run mkswap "${swap_path}"
     run swapon "${swap_path}"
 
     # Export for _export_config
@@ -205,6 +287,12 @@ _create_swapfile() {
 # Main
 
 section "Disk partitioning"
+
+FILESYSTEM="${FILESYSTEM:-btrfs}"
+case "${FILESYSTEM}" in
+    btrfs|ext4) ;;
+    *) die "Unknown FILESYSTEM '${FILESYSTEM}'. Use: btrfs, ext4." ;;
+esac
 
 _select_disk
 _confirm_disk

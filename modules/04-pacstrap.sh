@@ -36,6 +36,11 @@ for entry in "${PACKAGES[@]}"; do
     _pacstrap_packages+=("${entry%%:*}")
 done
 
+# Filesystem tooling for the target system
+if [[ "${FILESYSTEM:-btrfs}" == "btrfs" ]]; then
+    _pacstrap_packages+=("btrfs-progs")
+fi
+
 info "Installing packages: ${_pacstrap_packages[*]}"
 # Use a safe locale to suppress Perl locale warnings emitted by some pacman
 # scriptlets; locale.conf on the host does not affect the pacstrap env.

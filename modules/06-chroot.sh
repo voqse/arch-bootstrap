@@ -48,6 +48,7 @@ _export_config() {
 
     printf 'EFI_PART=%q\n'   "${EFI_PART:-}"
     printf 'ROOT_PART=%q\n'  "${ROOT_PART:-}"
+    printf 'FILESYSTEM=%q\n' "${FILESYSTEM:-btrfs}"
     printf 'SWAP_TYPE=%q\n'  "${SWAP_TYPE:-file}"
     printf 'SWAP_PART=%q\n'  "${SWAP_PART:-}"
     printf 'SWAP_FILE=%q\n'  "${SWAP_FILE:-}"
