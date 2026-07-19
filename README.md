@@ -120,7 +120,6 @@ arch-bootstrap/
     ├── tlp-pd.sh             # Enables tlp-pd.service for desktop power-profile integration
     ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service; masks systemd-rfkill
     ├── tlp.sh                # Enables tlp.service
-    └── ufw.sh                # UFW rules — deny incoming, allow outgoing; enables ufw
 ```
 
 ---
@@ -202,7 +201,7 @@ BASE_PACKAGES=(       # Passed to pacstrap first; always installed
 
 PACKAGES=(            # Additional packages; optionally with a config hook
     "networkmanager"              # auto hook  → runs hooks/networkmanager.sh
-    "ufw:ufw"                     # explicit hook → runs hooks/ufw.sh
+    "greetd"                      # hooks/greetd.sh runs automatically (same name)
     "greetd"                      # auto hook  → runs hooks/greetd.sh
     "tlp"                         # auto hook  → runs hooks/tlp.sh
     "tlp-pd"                      # auto hook  → runs hooks/tlp-pd.sh
@@ -225,11 +224,8 @@ directory. Two ways to attach one:
 # (writes GNOME dconf overrides; also adds GNOME hibernate tweaks when enabled)
 dconf update
 
-# hooks/ufw.sh — called via explicit "ufw:ufw"
-ufw default deny incoming
-ufw default allow outgoing
-ufw --force enable
-systemctl enable ufw
+# hooks/greetd.sh — runs automatically for the "greetd" package
+systemctl enable greetd
 ```
 
 Scripts execute inside `arch-chroot` after all packages have been installed,
