@@ -1,4 +1,4 @@
-# arch-bootstrap
+# arch-install
 
 Modular, config-driven Arch Linux installation script following the official
 [Installation guide](https://wiki.archlinux.org/title/Installation_guide).
@@ -27,26 +27,26 @@ UEFI is required.
 > Review scripts before piping them into a shell.
 
 One-liner from the Arch ISO, defaults only — the script downloads the repo
-into `/tmp/arch-bootstrap` and re-executes itself from there:
+into `/tmp/arch-install` and re-executes itself from there:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-install/master/run.sh)
 ```
 
 One-liner with a built-in preset from `config/`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset matebook
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-install/master/run.sh) --preset matebook
 ```
 
 Local clone with a custom preset:
 
 ```bash
-git clone https://github.com/voqse/arch-bootstrap
-cd arch-bootstrap
+git clone https://github.com/voqse/arch-install
+cd arch-install
 cp config/default.conf config/my.conf
 # edit config/my.conf, then:
-bash bootstrap.sh --config config/my.conf
+bash run.sh --config config/my.conf
 ```
 
 The script prompts for anything not defined in the preset before touching the
@@ -60,8 +60,8 @@ reboot
 ## Project structure
 
 ```
-arch-bootstrap/
-├── bootstrap.sh              # Entry point: argument parsing, interactive prompts
+arch-install/
+├── run.sh              # Entry point: argument parsing, interactive prompts
 ├── lib.sh                    # Shared helpers (logging, mkinitcpio editing)
 │
 ├── config/
@@ -118,7 +118,7 @@ arch-bootstrap/
 
 ### Inheritance
 
-`bootstrap.sh` always sources `config/default.conf` first, then the selected
+`run.sh` always sources `config/default.conf` first, then the selected
 preset. A preset opts into a role layer by sourcing it at the top:
 
 ```bash
@@ -288,14 +288,14 @@ host compositor). `sshd` and `docker.service` are enabled from first boot via
 the server role layer.
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset station
+bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-install/master/run.sh) --preset station
 ```
 
 ## Installation pipeline
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | `bootstrap.sh` | Load preset; prompt for credentials, hostname, timezone, unset swap values |
+| 0 | `run.sh` | Load preset; prompt for credentials, hostname, timezone, unset swap values |
 | 1 | `01-pre-checks` | Assert UEFI mode, check internet, enable NTP |
 | 2 | `02-disk` | Partition, format, mount under `/mnt` |
 | 3 | `03-mirrors` | Mirrorlist from `MIRRORS` or reflector (`REFLECTOR_ARGS`) |

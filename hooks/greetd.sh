@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hook: greetd
 # Enables greetd with autologin into niri for the bootstrap user (collected
-# interactively at the start of bootstrap.sh); agreety stays configured as
+# interactively at the start of run.sh); agreety stays configured as
 # the fallback prompt, used when the initial session exits or autologin
 # cannot start.
 # Ref: https://wiki.archlinux.org/title/Greetd

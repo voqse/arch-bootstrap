@@ -19,7 +19,7 @@ fi
 mkdir -p /etc/xdg/reflector
 
 {
-    echo "# Managed by arch-bootstrap (hooks/reflector.sh) — do not edit by hand."
+    echo "# Managed by arch-install (hooks/reflector.sh) — do not edit by hand."
     echo "# Arguments are defined once as REFLECTOR_ARGS in the preset config."
     echo "--save /etc/pacman.d/mirrorlist"
     printf '%s\n' "${REFLECTOR_ARGS[@]}"

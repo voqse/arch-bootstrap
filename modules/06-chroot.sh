@@ -78,7 +78,7 @@ _export_config() {
     section "Chroot configuration"
 
     _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    _chroot_dir="/mnt/root/arch-bootstrap-chroot"
+    _chroot_dir="/mnt/root/arch-install-chroot"
 
     trap 'rm -rf -- "${_chroot_dir}"' EXIT INT TERM HUP
 

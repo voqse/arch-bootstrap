@@ -24,7 +24,7 @@ jobs:
           rc=0
           while IFS= read -r f; do
             bash -n "$f" || rc=1
-          done < <(git ls-files '*.sh' '*.conf' 'bootstrap.sh')
+          done < <(git ls-files '*.sh' '*.conf' 'run.sh')
           exit "$rc"
 
       - name: ShellCheck
@@ -36,14 +36,14 @@ jobs:
           # modules consume; chroot config.sh exists only at install time)
           # makes SC2034/SC1091-class warnings inherent false positives here.
           # Warnings still print below for review.
-          git ls-files '*.sh' '*.conf' 'bootstrap.sh' | xargs shellcheck -x || true
-          git ls-files '*.sh' '*.conf' 'bootstrap.sh' | xargs shellcheck -x -S error
+          git ls-files '*.sh' '*.conf' 'run.sh' | xargs shellcheck -x || true
+          git ls-files '*.sh' '*.conf' 'run.sh' | xargs shellcheck -x -S error
 
       - name: Config resolve smoke
         run: |
           set -euo pipefail
           # Resolve default + role layer + host preset exactly the way
-          # bootstrap.sh does, then assert the result is sane.
+          # run.sh does, then assert the result is sane.
           for conf in config/*.conf; do
             host="$(basename "$conf" .conf)"
             case "$host" in default|desktop|server) continue ;; esac

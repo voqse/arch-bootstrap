@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# arch-bootstrap — Modular Arch Linux installation script
+# arch-install — Modular Arch Linux installation script
 #
 # Usage:
-#   bash bootstrap.sh [--config /path/to/preset.conf] [--help]
+#   bash run.sh [--config /path/to/preset.conf] [--help]
 #
 # Run from the Arch ISO live environment:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-install/master/run.sh)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,9 +16,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # a temp directory and re-execute from there so that all relative paths work
 # correctly.  curl is used instead of git because git may be unavailable in
 # the live environment (e.g., Arch ISO).
-_REPO_URL="https://github.com/voqse/arch-bootstrap"
+_REPO_URL="https://github.com/voqse/arch-install"
 _REPO_BRANCH="master"
-_CLONE_DIR="/tmp/arch-bootstrap"
+_CLONE_DIR="/tmp/arch-install"
 
 if [[ ! -f "${SCRIPT_DIR}/lib.sh" || ! -d "${SCRIPT_DIR}/modules" ]]; then
     echo "==> Sibling files not found — downloading ${_REPO_URL} into ${_CLONE_DIR} ..."
@@ -26,7 +26,7 @@ if [[ ! -f "${SCRIPT_DIR}/lib.sh" || ! -d "${SCRIPT_DIR}/modules" ]]; then
     mkdir -p "${_CLONE_DIR}"
     curl -fsSL "${_REPO_URL}/archive/refs/heads/${_REPO_BRANCH}.tar.gz" \
         | tar -xzf - --strip-components=1 -C "${_CLONE_DIR}"
-    exec bash "${_CLONE_DIR}/bootstrap.sh" "$@"
+    exec bash "${_CLONE_DIR}/run.sh" "$@"
 fi
 
 # Argument parsing
@@ -208,7 +208,7 @@ fi
 
 # Run installation pipeline
 
-section "arch-bootstrap — Arch Linux installation"
+section "arch-install — Arch Linux installation"
 info "Config: ${CONFIG_FILE}"
 
 shopt -s nullglob
