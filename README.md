@@ -1,96 +1,78 @@
 # arch-bootstrap
 
-Modular, config-driven Arch Linux installation script that strictly follows
-the official [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide).
+Modular, config-driven Arch Linux installation script following the official
+[Installation guide](https://wiki.archlinux.org/title/Installation_guide).
 
-Preset files define the target machine's packages, services, and other
-non-secret settings. Credentials (username, user password, root password),
-hostname, and timezone are always collected interactively at the start of the
-run and are never stored in preset files. Swap configuration may be defined in
-a preset to skip the interactive prompt, or left unset to be asked at runtime.
+A host is described by a preset file: packages, services, kernel parameters,
+disk layout. Presets inherit `config/default.conf` and optionally a role layer
+(`desktop.conf` or `server.conf`), so a new machine is a short file of
+overrides. Credentials (username, user password, root password) and timezone
+are always collected interactively at the start of the run and never stored in
+presets; hostname and swap parameters are prompted with the preset value as
+the default.
 
 The root filesystem is btrfs by default: subvolumes `@`, `@home`, `@log`,
 `@pkg`, `@snapshots` (plus `@swap` when a swapfile is requested) mounted with
 `noatime,compress=zstd`. Set `FILESYSTEM="ext4"` in a preset for a plain ext4
-root.
-
----
+root. The bootloader is always systemd-boot; UEFI is required.
 
 ## Quick start
 
-> **Security note:** Always download and review scripts before executing them.
+> Review scripts before piping them into a shell.
 
-### Scenario 1 — one-liner, no customisation
-
-Boot the Arch ISO, connect to the internet, and run:
+One-liner from the Arch ISO, defaults only — the script downloads the repo
+into `/tmp/arch-bootstrap` and re-executes itself from there:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh)
 ```
 
-The script clones the repo automatically and uses the defaults from
-`config/default.conf`.
-
-### Scenario 2 — one-liner with a built-in preset
-
-Pass `--preset <name>` to use one of the ready-made presets from `config/`:
+One-liner with a built-in preset from `config/`:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset matebook
 ```
 
-The repo is cloned into `/tmp/arch-bootstrap` and `config/matebook.conf`
-is used automatically — no manual file management needed.
-
-### Scenario 3 — local clone, custom config
-
-For full control, clone the repo and supply your own config:
+Local clone with a custom preset:
 
 ```bash
-# Clone and create your own preset based on the defaults
 git clone https://github.com/voqse/arch-bootstrap
 cd arch-bootstrap
 cp config/default.conf config/my.conf
-
-# Edit the preset to match your hardware and preferences
-nano config/my.conf
-
-# Run — you will be asked for credentials and timezone first
+# edit config/my.conf, then:
 bash bootstrap.sh --config config/my.conf
 ```
 
----
-
-The script will prompt for any configuration not defined in the preset before
-touching the disk, and will always ask for confirmation before partitioning.
-When finished:
+The script prompts for anything not defined in the preset before touching the
+disk and always asks for confirmation before partitioning. When finished:
 
 ```bash
 umount -R /mnt
 reboot
 ```
 
----
-
 ## Project structure
 
 ```
 arch-bootstrap/
-├── bootstrap.sh              # Main entry point; interactive credential prompt
-├── lib.sh                    # Shared helper functions
+├── bootstrap.sh              # Entry point: argument parsing, interactive prompts
+├── lib.sh                    # Shared helpers (logging, mkinitcpio editing)
 │
 ├── config/
-│   ├── default.conf          # Base preset — start here for a new machine
-│   ├── matebook.conf         # Huawei MateBook D16 2021 (Ryzen 4600H / Niri)
-│   └── station.conf          # Desktop workstation (Ryzen 5800X3D / RTX 4070 Ti / Niri)
+│   ├── default.conf          # Base preset — inherited by everything
+│   ├── desktop.conf          # Role layer: graphical stack (greetd/niri/Wayland)
+│   ├── server.conf           # Role layer: headless (sshd, docker.service)
+│   ├── matebook.conf         # Huawei MateBook D16 2021 (Ryzen 4600H, desktop)
+│   ├── chuwi.conf            # CHUWI UBox (Ryzen 6600H, desktop)
+│   └── station.conf          # Workstation (5800X3D / RTX 4070 Ti, headless server)
 │
 ├── modules/                  # Pre-chroot pipeline (runs on the live ISO)
-│   ├── 01-pre-checks.sh      # Verify UEFI, internet, NTP
-│   ├── 02-disk.sh            # Partition, format, mount
-│   ├── 03-mirrors.sh         # Mirror selection via reflector
-│   ├── 04-pacstrap.sh        # Install packages into /mnt
-│   ├── 05-fstab.sh           # Generate /etc/fstab
-│   └── 06-chroot.sh          # Copy scripts, enter arch-chroot
+│   ├── 01-pre-checks.sh      # Assert UEFI, internet, NTP
+│   ├── 02-disk.sh            # Partition, format, mount (btrfs subvolumes, ESP umask=0077)
+│   ├── 03-mirrors.sh         # Mirror selection: MIRRORS list or reflector
+│   ├── 04-pacstrap.sh        # pacstrap into /mnt
+│   ├── 05-fstab.sh           # genfstab
+│   └── 06-chroot.sh          # Serialise config, enter arch-chroot
 │
 ├── chroot/
 │   ├── configure.sh          # Chroot entry point
@@ -98,260 +80,224 @@ arch-bootstrap/
 │       ├── 01-timezone.sh    # Timezone + systemd-timesyncd
 │       ├── 02-localization.sh# locale.gen, locale.conf, vconsole.conf
 │       ├── 03-hostname.sh    # /etc/hostname, /etc/hosts
-│       ├── 04-users.sh       # Root password + user accounts + sudoers
-│       ├── 05-bootloader.sh  # systemd-boot install + config
-│       ├── 06-services.sh    # systemctl enable for SERVICES array
+│       ├── 04-users.sh       # Root password, user account, sudoers
+│       ├── 05-bootloader.sh  # systemd-boot install + entry (resume offset for swapfile)
+│       ├── 06-services.sh    # systemctl enable for the SERVICES array
 │       ├── 07-hooks.sh       # Per-package configuration scripts
-│       ├── 08-sleep.sh       # Suspend-then-hibernate configuration
-│       ├── 09-initramfs.sh   # mkinitcpio (runs after all hooks)
-│       └── 10-yay.sh         # AUR helper (yay) + YAY_PACKAGES install
+│       ├── 08-sleep.sh       # Suspend-then-hibernate (HIBERNATE_DELAY)
+│       ├── 09-initramfs.sh   # mkinitcpio -P (after all hooks)
+│       └── 10-yay.sh         # AUR helper (yay) + YAY_PACKAGES
 │
 └── hooks/                    # Per-package configuration scripts
-    ├── amdgpu.sh             # AMD GPU early KMS — adds amdgpu module to mkinitcpio
-    ├── bluez.sh              # Enables the Bluetooth daemon
-    ├── docker.sh             # Adds install user to the docker group; enables docker.socket
+    ├── amdgpu.sh             # amdgpu into mkinitcpio MODULES (early KMS)
+    ├── bluez.sh              # Enables bluetooth.service
+    ├── docker.sh             # docker group for the install user; enables docker.socket
     ├── fwupd.sh              # Enables fwupd-refresh.timer
-    ├── greetd.sh             # Enables greetd and launches niri-session via agreety
-    ├── networkmanager.sh     # Enables NetworkManager; sets iwd as Wi-Fi backend
-    ├── nvidia-open.sh        # NVIDIA early KMS — adds nvidia modules to mkinitcpio
-    ├── plymouth.sh           # Inserts plymouth hook into mkinitcpio; adds splash cmdline; sets bgrt theme
-    ├── tlp-pd.sh             # Enables tlp-pd.service for desktop power-profile integration
-    ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service; masks systemd-rfkill
-    ├── tlp.sh                # Enables tlp.service
+    ├── greetd.sh             # greetd config with autologin into niri-session
+    ├── iwd.sh                # Sets iwd as the NetworkManager Wi-Fi backend
+    ├── networkmanager.sh     # Enables NetworkManager
+    ├── nvidia-open.sh        # nvidia modules into mkinitcpio MODULES (early KMS)
+    ├── nvm.sh                # Sources init-nvm.sh from the user's shell profiles
+    ├── pacman-contrib.sh     # Enables paccache.timer
+    ├── plymouth.sh           # plymouth mkinitcpio hook, splash cmdline, bgrt theme
+    ├── reflector.sh          # Persists REFLECTOR_ARGS to reflector.conf; enables reflector.timer
+    ├── swaylock.sh           # pam_gnome_keyring unlock on swaylock
+    ├── tlp-pd.sh             # Enables tlp-pd.service
+    ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service
+    └── tlp.sh                # Enables tlp.service
 ```
 
----
+## Configuration
 
-## Configuration reference
+### Inheritance
 
-Copy a preset and edit it:
+`bootstrap.sh` always sources `config/default.conf` first, then the selected
+preset. A preset opts into a role layer by sourcing it at the top:
 
 ```bash
-cp config/default.conf config/my.conf
-bash bootstrap.sh --config config/my.conf
+# desktop host
+source "${BASH_SOURCE[0]%/*}/desktop.conf"
+
+# headless host
+source "${BASH_SOURCE[0]%/*}/server.conf"
 ```
+
+Arrays are extended with `+=` so defaults are preserved:
+
+```bash
+BASE_PACKAGES+=("amd-ucode")
+PACKAGES+=("mesa:amdgpu" "vulkan-radeon")
+KERNEL_PARAMS+=("nvidia_drm.modeset=1")
+```
+
+Role layers hold what a whole class of machines shares:
+
+- `desktop.conf` — greetd + niri Wayland session, plymouth boot splash,
+  portals, terminal, lock/idle tooling, browsers.
+- `server.conf` — enables `sshd` and `docker.service` from first boot
+  (desktops keep docker socket-activated and start sshd manually).
 
 ### Localization
 
-| Variable      | Description                          | Default                          |
-|---------------|--------------------------------------|----------------------------------|
-| `LOCALES`     | Locales to uncomment in `locale.gen` | `("en_US.UTF-8" "ru_RU.UTF-8")` |
-| `LANG`        | System-wide language (`LANG=`)       | `en_US.UTF-8`                    |
-| `KEYMAP`      | Console keymap (`vconsole.conf`)     | `ruwin_alt_sh-UTF-8`             |
-| `FONT`        | Console font (`vconsole.conf`)       | `cyr-sun16`                      |
-| `XKBLAYOUT`   | Optional X11/Wayland keyboard layout exported to `vconsole.conf` | `us,ru` |
-| `XKBOPTIONS`  | X11/Wayland keyboard options         | `grp:alt_shift_toggle`           |
+| Variable     | Description                                        | Default                             |
+|--------------|----------------------------------------------------|-------------------------------------|
+| `LOCALES`    | Locales to uncomment in `locale.gen`               | `("en_US.UTF-8" "ru_RU.UTF-8")`     |
+| `LANG`       | System-wide language                               | `en_US.UTF-8`                       |
+| `KEYMAP`     | Console keymap (`vconsole.conf`)                   | `ruwin_alt_sh-UTF-8`                |
+| `FONT`       | Console font (`vconsole.conf`)                     | `cyr-sun16`                         |
+| `XKBLAYOUT`  | X11/Wayland layout exported to `vconsole.conf`     | `us,ru`                             |
+| `XKBOPTIONS` | X11/Wayland options                                | `grp:caps_toggle,grp_led:caps,compose:ralt` |
 
-> **Timezone is not a preset value.**
-> It is always prompted interactively at the start of each run.
-> `systemd-timesyncd` NTP is always enabled — no config flag needed.
+Timezone is not a preset value — it is always chosen interactively.
+`systemd-timesyncd` NTP is always enabled.
 
 ### Disk
 
-| Variable     | Description                                                  | Default       |
-|--------------|--------------------------------------------------------------|---------------|
-| `DISK`       | Device path, e.g. `/dev/nvme0n1`. Empty = prompt            | `""`          |
-| `SWAP_TYPE`  | `file` — swapfile at `/swap/swapfile`; `partition` — dedicated swap partition; `none` — no swap; `""` — prompt at runtime | `""` |
-| `SWAP_SIZE`  | Swap size, e.g. `16G` or `4096M`. Required when `SWAP_TYPE` is `file` or `partition` | `""`          |
+| Variable     | Description                                                        | Default   |
+|--------------|--------------------------------------------------------------------|-----------|
+| `DISK`       | Device path, e.g. `/dev/nvme0n1`; empty = prompt                   | `""`      |
+| `FILESYSTEM` | `btrfs` (subvolume layout) or `ext4`                               | `btrfs`   |
+| `SWAP_TYPE`  | `file`, `partition`, `none`, or `""` = prompt                      | `""`      |
+| `SWAP_SIZE`  | e.g. `16G`; required when `SWAP_TYPE` is `file` or `partition`     | `""`      |
 
 Partition layout (GPT / UEFI only):
 
-`SWAP_TYPE=file` or `none`:
+| # | Size                      | Type                 | Filesystem      |
+|---|---------------------------|----------------------|-----------------|
+| 1 | 1024 MiB                  | EFI System Partition | FAT32           |
+| 2 | `SWAP_SIZE` (only when `SWAP_TYPE=partition`) | Linux swap | swap |
+| 3 | remainder                 | Linux filesystem     | btrfs or ext4   |
 
-| # | Size      | Type                 | Filesystem |
-|---|-----------|----------------------|------------|
-| 1 | 1024 MiB  | EFI System Partition | FAT32      |
-| 2 | remainder | Linux filesystem     | ext4       |
+The ESP is mounted with `umask=0077` so the systemd-boot random seed and
+kernel images are not world-readable. With `SWAP_TYPE=file` the swapfile lives
+in a dedicated `@swap` subvolume (NOCOW, no compression) — snapshots of `@`
+stay possible — and the resume offset is written to the boot entry for
+hibernation.
 
-Swap file is created at `/swap/swapfile` and picked up by `genfstab`.
+### Mirrors
 
-`SWAP_TYPE=partition`:
-
-| # | Size        | Type                 | Filesystem |
-|---|-------------|----------------------|------------|
-| 1 | 1024 MiB    | EFI System Partition | FAT32      |
-| 2 | `SWAP_SIZE` | Linux swap           | swap       |
-| 3 | remainder   | Linux filesystem     | ext4       |
-
-### System identity
-
-| Variable   | Description      | Default      |
-|------------|------------------|--------------|
-| `HOSTNAME` | Machine hostname | `archlinux`  |
-
-> **Credentials, hostname, and timezone are not in preset files.**
-> Username, user password, root password, hostname, and timezone are asked
-> interactively at the very beginning of the installation run.
-> Swap type and size may be set in a preset to skip the interactive prompt;
-> when left unset, they are asked at runtime.
+`REFLECTOR_ARGS` is the single source of truth, used twice: at install time by
+`modules/03-mirrors.sh` to rank mirrors, and on the installed system by
+`hooks/reflector.sh`, which writes the same arguments to
+`/etc/xdg/reflector/reflector.conf` and enables `reflector.timer`. Setting a
+`MIRRORS` array in a preset bypasses reflector entirely.
 
 ### Packages
 
 ```bash
-BASE_PACKAGES=(       # Passed to pacstrap first; always installed
+BASE_PACKAGES=(       # Passed to pacstrap; extend per host with += ("amd-ucode" etc.)
     "base"
     "base-devel"
     "linux"
     "linux-firmware"
-    # "amd-ucode"     # add for AMD CPUs (via BASE_PACKAGES+=)
-    # "intel-ucode"   # add for Intel CPUs (via BASE_PACKAGES+=)
 )
 
-PACKAGES=(            # Additional packages; optionally with a config hook
-    "networkmanager"              # auto hook  → runs hooks/networkmanager.sh
-    "greetd"                      # hooks/greetd.sh runs automatically (same name)
-    "greetd"                      # auto hook  → runs hooks/greetd.sh
-    "tlp"                         # auto hook  → runs hooks/tlp.sh
-    "tlp-pd"                      # auto hook  → runs hooks/tlp-pd.sh
-    "tlp-rdw"                     # auto hook  → runs hooks/tlp-rdw.sh
+PACKAGES=(            # Everything else; entries may carry a configuration hook
+    "networkmanager"          # hooks/networkmanager.sh runs automatically (same name)
+    "mesa:amdgpu"             # explicit hook — runs hooks/amdgpu.sh after install
 )
 ```
 
-#### Per-package configuration scripts
+Any package entry can carry a configuration script from `hooks/`:
 
-Any package entry can carry a configuration script from the `hooks/`
-directory. Two ways to attach one:
+1. **Auto-detection** — if `hooks/<package-name>.sh` exists, it runs whenever
+   that package appears in `PACKAGES`.
+2. **Explicit name** — `"package:hook-name"` runs `hooks/<hook-name>.sh`.
 
-1. **Auto-detection** — create `hooks/<package-name>.sh`. It runs
-   automatically whenever that package appears in `PACKAGES`.
-2. **Explicit name** — use `"package:hook-name"` syntax to run
-   `hooks/<hook-name>.sh`.
+Hooks execute inside `arch-chroot` after all packages are installed, so the
+full system toolset (`systemctl`, the serialised config in `config.sh`) is
+available. `mkinitcpio -P` runs once after all hooks, picking up any
+MODULES/HOOKS edits they made.
 
-```bash
-# hooks/bluez.sh — runs automatically after bluez is installed
-systemctl enable bluetooth
+Wi-Fi is deliberately per-host, not default: wired-only machines must not
+carry the stack. Desktop presets that need it add
+`PACKAGES+=("iwd" "wireless-regdb")` and `hooks/iwd.sh` wires iwd as the
+NetworkManager backend.
 
-# hooks/greetd.sh — runs automatically for the "greetd" package
-systemctl enable greetd
-```
-
-Scripts execute inside `arch-chroot` after all packages have been installed,
-so full system tools (dconf, systemctl, etc.) are available.
+`YAY_PACKAGES` lists AUR packages, built and installed by the last chroot
+module after `yay` itself is bootstrapped.
 
 ### Bootloader
 
-| Variable         | Description                          | Default  |
-|------------------|--------------------------------------|----------|
-| `EFI_MOUNTPOINT` | Where the ESP is mounted             | `/boot`  |
-| `KERNEL_PARAMS`  | Extra kernel command-line parameters | `()`     |
+| Variable         | Description                          | Default |
+|------------------|--------------------------------------|---------|
+| `EFI_MOUNTPOINT` | ESP mountpoint                       | `/boot` |
+| `KERNEL_PARAMS`  | Extra kernel command-line parameters | `()`    |
 
-systemd-boot is always used. It provides a silent instant-boot experience, with
-microcode images auto-detected and swapfile resume offset written to the boot
-entry automatically.
-
-Extra kernel parameters are appended to the boot entry by the bootloader module.
-Use `+=` in preset files to extend without overwriting defaults:
-
-```bash
-KERNEL_PARAMS+=("nvidia_drm.modeset=1" "nvidia_drm.fbdev=1")
-```
+systemd-boot only. Microcode initrds are picked up automatically; the
+swapfile resume offset is appended to the entry when applicable.
 
 ### Services
 
 ```bash
 SERVICES=(
-    # fstrim.timer: periodic TRIM for SSD longevity — part of the base system,
-    # not tied to any PACKAGES entry, so it lives here rather than in a hook.
     "fstrim.timer"
 )
 ```
 
-Each entry is passed verbatim to `systemctl enable` inside the chroot.
+Each entry is passed verbatim to `systemctl enable` inside the chroot. The
+array is only for units not tied to a `PACKAGES` entry (built-in systemd
+timers, role-layer additions such as `sshd`); package-specific services are
+enabled by that package's hook instead.
 
-> **Note:** Services tied to a specific package are enabled inside that package's
-> hook script rather than here. For example `bluez.sh` enables `bluetooth`,
-> `greetd.sh` enables `greetd`, `networkmanager.sh` enables `NetworkManager`, and so on.
+### Sleep
 
----
+`HIBERNATE_DELAY` (a systemd timespan, e.g. `"4h"`) enables
+suspend-then-hibernate with that delay. Empty keeps plain suspend.
 
 ## Presets
 
-Every preset inherits all values from `config/default.conf` and only needs
-to override what differs. This means a preset can be as short as a handful
-of lines while still producing a complete, valid configuration.
+### `config/matebook.conf` — Huawei MateBook D16 2021
 
-### `config/default.conf`
+Desktop role. AMD Ryzen 5 4600H with integrated Vega 6: `amd-ucode`,
+`mesa` + `vulkan-radeon` with amdgpu early KMS, `brightnessctl`, iwd Wi-Fi
+stack, 16G swap partition, `HIBERNATE_DELAY="4h"`,
+`acpi_enforce_resources=lax` for the platform's SMBus/ACPI conflict.
 
-Minimal base preset. Contains only what is needed for a functional system.
-All NTP, mirror, and bootloader settings are already at sensible defaults — you
-only need to override what differs for your machine.
+### `config/chuwi.conf` — CHUWI UBox
 
-### `config/matebook.conf`
+Desktop role. AMD Ryzen 5 6600H with integrated Radeon 660M: same AMD
+graphics and Wi-Fi stack as matebook, plus `moonlight-qt` as a streaming
+client for the workstation. 16G swap partition, `HIBERNATE_DELAY="4h"`.
 
-Ready-to-use preset for the **Huawei MateBook D16 2021**
-(AMD Ryzen 5 4600H, integrated Radeon Vega 6):
+### `config/station.conf` — workstation
 
-| Setting | Value |
-|---------|-------|
-| Hostname | matebook |
-| Desktop | Niri (Wayland / greetd) |
-| Audio | PipeWire |
-| GPU | Mesa + vulkan-radeon (VA-API ships in mesa itself) |
-| Network | NetworkManager |
-| Bluetooth | BlueZ |
-| Firewall | UFW (deny in / allow out) |
-| Background | Configure per-user in Niri (e.g. via `swaybg`) |
-| Boot | systemd-boot (default) — silent instant boot |
-| SSD | `fstrim.timer` enabled |
-| Firmware | `fwupd` + `fwupd-refresh.timer` |
+Server role — headless, no graphical session. AMD Ryzen 7 5800X3D with an
+Nvidia RTX 4070 Ti: `nvidia-open` with early KMS and
+`nvidia_drm.modeset=1 nvidia_drm.fbdev=1` (GBM consumers render without a
+host compositor). `sshd` and `docker.service` are enabled from first boot via
+the server role layer.
 
 ```bash
-# from the internet
-bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset matebook
-
-# or from a local clone
-bash bootstrap.sh --preset matebook
-```
-
-### `config/station.conf`
-
-Ready-to-use preset for a **desktop workstation**
-(Gigabyte B550 AORUS Elite V2, AMD Ryzen 7 5800X3D, Nvidia RTX 4070 Ti):
-
-| Setting | Value |
-|---------|-------|
-| Hostname | station |
-| Desktop | Niri (Wayland / greetd) |
-| Audio | PipeWire |
-| GPU | nvidia-open (open kernel modules) + early KMS |
-| Kernel params | `nvidia_drm.modeset=1 nvidia_drm.fbdev=1` |
-| Network | NetworkManager + iwd |
-| Wi-Fi/BT | ASUS PCE-AXE59BT (MediaTek MT7922, in-kernel driver) |
-| Bluetooth | BlueZ |
-| Firewall | UFW (deny in / allow out) |
-| Background | Configure per-user in Niri (e.g. via `swaybg`) |
-| Boot | systemd-boot (default) — silent instant boot |
-| SSD | `fstrim.timer` enabled |
-| Firmware | `fwupd` + `fwupd-refresh.timer` |
-
-```bash
-# from the internet
 bash <(curl -fsSL https://raw.githubusercontent.com/voqse/arch-bootstrap/master/bootstrap.sh) --preset station
-
-# or from a local clone
-bash bootstrap.sh --preset station
 ```
-
----
 
 ## Installation pipeline
 
 | Step | Module | Description |
 |------|--------|-------------|
-| 0 | bootstrap.sh | Prompt for credentials, hostname, timezone, and any unset swap values |
-| 1 | `01-pre-checks` | Assert UEFI mode, ping internet, enable NTP |
-| 2 | `02-disk` | Partition disk, format, mount under `/mnt` |
-| 3 | `03-mirrors` | Use default Arch mirrorlist (reflector if available) |
-| 4 | `04-pacstrap` | `pacstrap -K /mnt <all packages>` |
-| 5 | `05-fstab` | `genfstab -U /mnt > /mnt/etc/fstab` |
+| 0 | `bootstrap.sh` | Load preset; prompt for credentials, hostname, timezone, unset swap values |
+| 1 | `01-pre-checks` | Assert UEFI mode, check internet, enable NTP |
+| 2 | `02-disk` | Partition, format, mount under `/mnt` |
+| 3 | `03-mirrors` | Mirrorlist from `MIRRORS` or reflector (`REFLECTOR_ARGS`) |
+| 4 | `04-pacstrap` | `pacstrap -K /mnt <packages>` |
+| 5 | `05-fstab` | `genfstab -U /mnt` |
 | 6 | `06-chroot` | Copy scripts + serialised config, run `arch-chroot` |
-| — | (chroot) timezone | `/etc/localtime`, `hwclock`, enable timesyncd |
+| — | (chroot) timezone | `/etc/localtime`, `hwclock`, timesyncd |
 | — | (chroot) localization | `locale-gen`, `locale.conf`, `vconsole.conf` |
 | — | (chroot) hostname | `/etc/hostname`, `/etc/hosts` |
 | — | (chroot) users | Root password, user account, `/etc/sudoers.d/wheel` |
-| — | (chroot) bootloader | systemd-boot install + config |
-| — | (chroot) services | `systemctl enable` for each entry in `SERVICES` |
-| — | (chroot) hooks | Per-package configuration scripts from `hooks/` |
-| — | (chroot) sleep | Suspend-then-hibernate via `HIBERNATE_DELAY` (skipped if unset) |
-| — | (chroot) initramfs | `mkinitcpio -P` (runs after hooks so all module/hook changes are applied) |
-| — | (chroot) yay | Build + install `yay`; install `YAY_PACKAGES` from the AUR |
+| — | (chroot) bootloader | systemd-boot install + entry |
+| — | (chroot) services | `systemctl enable` for `SERVICES` |
+| — | (chroot) hooks | Per-package scripts from `hooks/` |
+| — | (chroot) sleep | Suspend-then-hibernate (skipped when `HIBERNATE_DELAY` unset) |
+| — | (chroot) initramfs | `mkinitcpio -P` |
+| — | (chroot) yay | Build `yay`, install `YAY_PACKAGES` |
+
+## CI
+
+`lint.yml` runs on every push and pull request: `bash -n` syntax check over
+all scripts, ShellCheck (`-x`, gating on errors), and a config-resolve smoke
+test that sources `default.conf` plus each host preset and asserts the result
+is sane (non-empty package set, hostname overridden, no duplicate packages or
+services).
