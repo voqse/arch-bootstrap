@@ -293,7 +293,7 @@ Ready-to-use preset for the **Huawei MateBook D16 2021**
 | Hostname | matebook |
 | Desktop | Niri (Wayland / greetd) |
 | Audio | PipeWire |
-| GPU | Mesa + vulkan-radeon + libva-mesa-driver |
+| GPU | Mesa + vulkan-radeon (VA-API ships in mesa itself) |
 | Network | NetworkManager |
 | Bluetooth | BlueZ |
 | Firewall | UFW (deny in / allow out) |
