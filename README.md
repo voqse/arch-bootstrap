@@ -3,6 +3,10 @@
 Modular, config-driven Arch Linux installation script following the official
 [Installation guide](https://wiki.archlinux.org/title/Installation_guide).
 
+This is a personal script for installing my own machines. It makes no claims
+of being general-purpose — use archinstall or write your own; fork at your
+own risk.
+
 A host is described by a preset file: packages, services, kernel parameters,
 disk layout. Presets inherit `config/default.conf` and optionally a role layer
 (`desktop.conf` or `server.conf`), so a new machine is a short file of
