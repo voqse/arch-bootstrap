@@ -20,6 +20,9 @@ if [[ -n "${INSTALL_USERNAME:-}" ]]; then
     fi
 fi
 
-# Enable socket-activated Docker daemon.
+# Enable socket-activated Docker daemon: on desktops this IS the on-demand
+# mode — the daemon stays down until the first docker API call. Servers
+# additionally enable docker.service via SERVICES in config/server.conf
+# (24/7 stacks need restart policies applied at boot).
 # Ref: https://wiki.archlinux.org/title/Docker#Installation
 systemctl enable docker.socket
