@@ -6,6 +6,16 @@
 
 section "Enabling services"
 
+# Monthly scrub of / — the only btrfs maintenance worth automating (balance
+# and defrag timers cause more trouble than they solve on modern btrfs).
+# "-" is the systemd path escape for "/". Conditional on the filesystem, so
+# it lives here rather than in the unconditional SERVICES array.
+# Ref: https://wiki.archlinux.org/title/Btrfs#Scrub
+if [[ "${FILESYSTEM:-btrfs}" == "btrfs" ]]; then
+    info "Enabling: btrfs-scrub@-.timer (monthly scrub of /)"
+    systemctl enable btrfs-scrub@-.timer || warn "Failed to enable btrfs-scrub@-.timer."
+fi
+
 if [[ ${#SERVICES[@]} -eq 0 ]]; then
     info "No services defined in SERVICES; skipping."
     return

@@ -26,6 +26,9 @@ BTRFS_SUBVOLS=(
     "@home:/home"
     "@log:/var/log"
     "@pkg:/var/cache/pacman/pkg"
+    # Docker layers/volumes out of root snapshots: image data would otherwise
+    # be pinned by every snapshot of @ (deleted images keep occupying space).
+    "@docker:/var/lib/docker"
     "@snapshots:/.snapshots"
 )
 BTRFS_MOUNT_OPTS="noatime,compress=zstd"

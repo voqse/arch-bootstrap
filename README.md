@@ -12,9 +12,12 @@ presets; hostname and swap parameters are prompted with the preset value as
 the default.
 
 The root filesystem is btrfs by default: subvolumes `@`, `@home`, `@log`,
-`@pkg`, `@snapshots` (plus `@swap` when a swapfile is requested) mounted with
-`noatime,compress=zstd`. Set `FILESYSTEM="ext4"` in a preset for a plain ext4
-root. The bootloader is always systemd-boot; UEFI is required.
+`@pkg`, `@docker`, `@snapshots` (plus `@swap` when a swapfile is requested)
+mounted with `noatime,compress=zstd`. snap-pac snapshots `@` around every
+pacman transaction; caches, logs, Docker data, and the snapshots themselves
+live outside `@` so rollback material stays small. Set `FILESYSTEM="ext4"`
+in a preset for a plain ext4 root. The bootloader is always systemd-boot;
+UEFI is required.
 
 ## Quick start
 
@@ -91,16 +94,17 @@ arch-bootstrap/
 └── hooks/                    # Per-package configuration scripts
     ├── amdgpu.sh             # amdgpu into mkinitcpio MODULES (early KMS)
     ├── bluez.sh              # Enables bluetooth.service
-    ├── docker.sh             # docker group for the install user; enables docker.socket
+    ├── docker.sh             # docker group; overlay2 pin in daemon.json; enables docker.socket
     ├── fwupd.sh              # Enables fwupd-refresh.timer
     ├── greetd.sh             # greetd config with autologin into niri-session
     ├── iwd.sh                # Sets iwd as the NetworkManager Wi-Fi backend
     ├── networkmanager.sh     # Enables NetworkManager
     ├── nvidia-open.sh        # nvidia modules into mkinitcpio MODULES (early KMS)
     ├── nvm.sh                # Sources init-nvm.sh from the user's shell profiles
-    ├── pacman-contrib.sh     # Enables paccache.timer
+    ├── pacman-contrib.sh     # paccache.timer + drop-in purging uninstalled packages' cache
     ├── plymouth.sh           # plymouth mkinitcpio hook, splash cmdline, bgrt theme
     ├── reflector.sh          # Persists REFLECTOR_ARGS to reflector.conf; enables reflector.timer
+    ├── snapper.sh            # Snapper root config for snap-pac (timeline off); cleanup timer
     ├── swaylock.sh           # pam_gnome_keyring unlock on swaylock
     ├── tlp-pd.sh             # Enables tlp-pd.service
     ├── tlp-rdw.sh            # Enables NetworkManager-dispatcher.service
@@ -173,6 +177,18 @@ kernel images are not world-readable. With `SWAP_TYPE=file` the swapfile lives
 in a dedicated `@swap` subvolume (NOCOW, no compression) — snapshots of `@`
 stay possible — and the resume offset is written to the boot entry for
 hibernation.
+
+### Snapshots (btrfs)
+
+snap-pac creates pre/post snapshots of `@` around every pacman transaction;
+`hooks/snapper.sh` sets up the root config with timeline snapshots disabled
+and `NUMBER_LIMIT=10` (roughly the last five updates), pruned by
+`snapper-cleanup.timer`. A monthly `btrfs-scrub@-.timer` is enabled for
+integrity checking; no balance or defrag automation on purpose. Snapshots
+share the disk with the system — they are rollback material, not backups.
+Rollback is deliberately manual: the boot entry pins `subvol=@`, so restoring
+means replacing `@` from `/.snapshots` (e.g. from the live ISO) rather than a
+`snapper rollback` default-subvolume switch.
 
 ### Mirrors
 
