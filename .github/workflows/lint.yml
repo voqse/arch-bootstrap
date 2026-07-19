@@ -1,0 +1,71 @@
+name: lint
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Pinned by commit SHA (actions/checkout v6)
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: Bash syntax (bash -n)
+        run: |
+          set -euo pipefail
+          rc=0
+          while IFS= read -r f; do
+            bash -n "$f" || rc=1
+          done < <(git ls-files '*.sh' '*.conf' 'bootstrap.sh')
+          exit "$rc"
+
+      - name: ShellCheck
+        run: |
+          set -euo pipefail
+          shellcheck --version
+          # -x follows sourced files; config/*.conf carry bash shebangs.
+          # Gate on errors only: cross-file variable flow (configs declare,
+          # modules consume; chroot config.sh exists only at install time)
+          # makes SC2034/SC1091-class warnings inherent false positives here.
+          # Warnings still print below for review.
+          git ls-files '*.sh' '*.conf' 'bootstrap.sh' | xargs shellcheck -x || true
+          git ls-files '*.sh' '*.conf' 'bootstrap.sh' | xargs shellcheck -x -S error
+
+      - name: Config resolve smoke
+        run: |
+          set -euo pipefail
+          # Resolve default + role layer + host preset exactly the way
+          # bootstrap.sh does, then assert the result is sane.
+          for conf in config/*.conf; do
+            host="$(basename "$conf" .conf)"
+            case "$host" in default|desktop|server) continue ;; esac
+            echo "== resolving preset: $host"
+            bash -c '
+              set -euo pipefail
+              source config/default.conf
+              source config/'"$host"'.conf
+
+              [[ ${#PACKAGES[@]} -gt 0 ]] || { echo "empty PACKAGES"; exit 1; }
+              [[ ${#BASE_PACKAGES[@]} -gt 0 ]] || { echo "empty BASE_PACKAGES"; exit 1; }
+              [[ -n "${HOSTNAME:-}" && "${HOSTNAME}" != "archlinux" ]] \
+                || { echo "preset must set HOSTNAME"; exit 1; }
+
+              dups=$(printf "%s\n" "${PACKAGES[@]%%:*}" | sort | uniq -d)
+              [[ -z "$dups" ]] || { echo "duplicate PACKAGES:"; echo "$dups"; exit 1; }
+
+              if [[ ${#SERVICES[@]} -gt 0 ]]; then
+                dups=$(printf "%s\n" "${SERVICES[@]}" | sort | uniq -d)
+                [[ -z "$dups" ]] || { echo "duplicate SERVICES:"; echo "$dups"; exit 1; }
+              fi
+
+              echo "   packages=${#PACKAGES[@]} services=${#SERVICES[@]} yay=${#YAY_PACKAGES[@]}"
+            '
+          done
