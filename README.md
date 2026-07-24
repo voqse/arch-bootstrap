@@ -15,8 +15,9 @@ presets; hostname and swap parameters are prompted with the preset value as
 the default.
 
 The root filesystem is btrfs by default: subvolumes `@`, `@home`, `@log`,
-`@pkg`, `@docker`, `@snapshots` (plus `@swap` when a swapfile is requested)
-mounted with `noatime,compress=zstd`. snap-pac snapshots `@` around every
+`@cache`, `@vartmp`, `@docker`, `@snapshots` (plus `@swap` when a swapfile
+is requested) mounted with `noatime,compress=zstd`. snap-pac snapshots `@`
+around every
 pacman transaction; caches, logs, Docker data, and the snapshots themselves
 live outside `@` so rollback material stays small. Set `FILESYSTEM="ext4"`
 in a preset for a plain ext4 root. The bootloader is always systemd-boot;

@@ -28,7 +28,12 @@ BTRFS_SUBVOLS=(
     "@:/"
     "@home:/home"
     "@log:/var/log"
-    "@pkg:/var/cache/pacman/pkg"
+    # Whole /var/cache (pacman package cache included) out of root snapshots:
+    # cached data would otherwise be pinned by every snapshot of @ (paccache
+    # could never actually free space). /var/tmp likewise per the Snapper
+    # wiki's suggested layout — rollbacks should not resurrect temp files.
+    "@cache:/var/cache"
+    "@vartmp:/var/tmp"
     # Docker layers/volumes out of root snapshots: image data would otherwise
     # be pinned by every snapshot of @ (deleted images keep occupying space).
     "@docker:/var/lib/docker"
@@ -230,6 +235,11 @@ _mount_btrfs() {
             run chattr +C "/mnt${target}"
         fi
     done
+
+    # /var/tmp must keep the stock sticky-bit permissions: pacman only warns
+    # about (never fixes) permission mismatches on pre-existing directories,
+    # and a fresh subvolume root comes up 0755.
+    run chmod 1777 /mnt/var/tmp
 
     # No compression on the swap subvolume: swapfiles require NOCOW, which
     # is incompatible with compression anyway.
