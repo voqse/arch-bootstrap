@@ -94,7 +94,8 @@ arch-install/
 │       ├── 08-sleep.sh       # Suspend-then-hibernate (HIBERNATE_DELAY)
 │       ├── 09-initramfs.sh   # mkinitcpio -P (after all hooks)
 │       ├── 10-yay.sh         # AUR helper (yay) + YAY_PACKAGES
-│       └── 11-xdg.sh         # Disable xdg-user-dirs auto-creation
+│       ├── 11-xdg.sh         # Disable xdg-user-dirs auto-creation
+│       └── 12-pacman.sh      # pacman.conf: Color, VerbosePkgLists, ParallelDownloads
 │
 └── hooks/                    # Per-package configuration scripts
     ├── amdgpu.sh             # amdgpu into mkinitcpio MODULES (early KMS)
