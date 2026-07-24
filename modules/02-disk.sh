@@ -19,8 +19,11 @@
 # Ref: https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
 # Ref: https://wiki.archlinux.org/title/Btrfs#Compression
 
-# Btrfs layout — "subvolume:mountpoint" pairs; @ must stay first (mounted as /).
-# @swap is created on demand when SWAP_TYPE=file.
+# Btrfs layout — "subvolume:mountpoint[:nocow]" entries; @ must stay first
+# (mounted as /). @swap is created on demand when SWAP_TYPE=file.
+# Host presets append machine-specific subvolumes via BTRFS_EXTRA_SUBVOLS
+# (same entry format, see config/default.conf); the optional "nocow" flag
+# runs chattr +C on the mounted subvolume root, so new files inherit NOCOW.
 BTRFS_SUBVOLS=(
     "@:/"
     "@home:/home"
@@ -200,7 +203,8 @@ _mount_btrfs() {
     run mount "${ROOT_PART}" /mnt
 
     local entry subvol target
-    for entry in "${BTRFS_SUBVOLS[@]}"; do
+    for entry in "${BTRFS_SUBVOLS[@]}" "${BTRFS_EXTRA_SUBVOLS[@]:-}"; do
+        [[ -z "${entry}" ]] && continue
         run btrfs subvolume create "/mnt/${entry%%:*}"
     done
 
@@ -213,12 +217,18 @@ _mount_btrfs() {
     run umount /mnt
 
     info "Mounting subvolumes..."
-    for entry in "${BTRFS_SUBVOLS[@]}"; do
-        subvol="${entry%%:*}"
-        target="${entry#*:}"
+    local subvol target flags
+    for entry in "${BTRFS_SUBVOLS[@]}" "${BTRFS_EXTRA_SUBVOLS[@]:-}"; do
+        [[ -z "${entry}" ]] && continue
+        IFS=':' read -r subvol target flags <<< "${entry}"
         [[ "${target}" == "/" ]] && target=""
         run mkdir -p "/mnt${target}"
         run mount -o "${BTRFS_MOUNT_OPTS},subvol=${subvol}" "${ROOT_PART}" "/mnt${target:-/}"
+        # NOCOW flag: new files inherit +C from the subvolume root (skips
+        # CoW fragmentation and compression — for torrent-style workloads)
+        if [[ "${flags}" == "nocow" ]]; then
+            run chattr +C "/mnt${target}"
+        fi
     done
 
     # No compression on the swap subvolume: swapfiles require NOCOW, which

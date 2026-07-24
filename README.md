@@ -168,6 +168,7 @@ Timezone is not a preset value — it is always chosen interactively.
 | `FILESYSTEM` | `btrfs` (subvolume layout) or `ext4`                               | `btrfs`   |
 | `SWAP_TYPE`  | `file`, `partition`, `none`, or `""` = prompt                      | `""`      |
 | `SWAP_SIZE`  | e.g. `16G`; required when `SWAP_TYPE` is `file` or `partition`     | `""`      |
+| `BTRFS_EXTRA_SUBVOLS` | Extra subvolumes appended to the base layout, `"subvol:mountpoint[:nocow]"` (station: `@downloads:/data/downloads:nocow`) | `()`      |
 
 Partition layout (GPT / UEFI only):
 
