@@ -277,8 +277,8 @@ stack, 16G swap partition, `HIBERNATE_DELAY="4h"`,
 ### `config/chuwi.conf` — CHUWI UBox
 
 Desktop role. AMD Ryzen 5 6600H with integrated Radeon 660M: same AMD
-graphics and Wi-Fi stack as matebook, plus `moonlight-qt` as a streaming
-client for the workstation. 16G swap partition, `HIBERNATE_DELAY="4h"`.
+graphics and Wi-Fi stack as matebook. 16G swap partition,
+`HIBERNATE_DELAY="4h"`.
 
 ### `config/station.conf` — workstation
 
