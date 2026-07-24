@@ -54,6 +54,14 @@ EOF
         if [[ -n "${swap_offset}" ]]; then
             cmdline+=" resume=UUID=${root_uuid} resume_offset=${swap_offset}"
         fi
+    elif [[ "${SWAP_TYPE:-file}" == "partition" && -n "${SWAP_PART:-}" ]]; then
+        # Swap partition: resume points at the partition itself, no offset.
+        # Ref: https://wiki.archlinux.org/title/Power_management/Suspend_and_hibernate#Hibernation
+        local swap_uuid
+        swap_uuid=$(blkid -s UUID -o value "${SWAP_PART}")
+        if [[ -n "${swap_uuid}" ]]; then
+            cmdline+=" resume=UUID=${swap_uuid}"
+        fi
     fi
     if [[ ${#KERNEL_PARAMS[@]} -gt 0 ]]; then
         cmdline+=" ${KERNEL_PARAMS[*]}"
