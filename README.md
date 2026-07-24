@@ -102,6 +102,7 @@ arch-install/
     ├── fwupd.sh              # Enables fwupd-refresh.timer
     ├── greetd.sh             # greetd config with autologin into niri-session
     ├── iwd.sh                # Sets iwd as the NetworkManager Wi-Fi backend
+    ├── neovim.sh             # Symlinks vim to nvim (vim package not installed)
     ├── networkmanager.sh     # Enables NetworkManager
     ├── nvidia-open.sh        # nvidia modules into mkinitcpio MODULES (early KMS)
     ├── nvm.sh                # Sources init-nvm.sh from the user's shell profiles
