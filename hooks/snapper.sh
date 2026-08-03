@@ -45,3 +45,5 @@ sed -i \
 
 # Prunes number-cleanup snapshots past NUMBER_LIMIT; timeline timer stays off.
 systemctl enable snapper-cleanup.timer
+# snapper's packaging leaves snapper-timeline.timer enabled — force it off.
+systemctl disable snapper-timeline.timer
