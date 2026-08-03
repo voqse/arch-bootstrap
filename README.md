@@ -275,13 +275,13 @@ suspend-then-hibernate with that delay. Empty keeps plain suspend.
 
 Desktop role. AMD Ryzen 5 4600H with integrated Vega 6: `amd-ucode`,
 `mesa` + `vulkan-radeon` with amdgpu early KMS, `brightnessctl`, iwd Wi-Fi
-stack, 16G swap partition, `HIBERNATE_DELAY="4h"`,
+stack, 16G swapfile, `HIBERNATE_DELAY="4h"`,
 `acpi_enforce_resources=lax` for the platform's SMBus/ACPI conflict.
 
 ### `config/chuwi.conf` — CHUWI UBox
 
 Desktop role. AMD Ryzen 5 6600H with integrated Radeon 660M: same AMD
-graphics and Wi-Fi stack as matebook. 16G swap partition,
+graphics and Wi-Fi stack as matebook. 16G swapfile,
 `HIBERNATE_DELAY="4h"`.
 
 ### `config/station.conf` — workstation
