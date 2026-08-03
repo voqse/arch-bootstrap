@@ -34,5 +34,19 @@ ReadWritePaths=/etc/pacman.d
 ExecStartPre=/usr/bin/cp -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 EOF
 
+cat > /etc/systemd/system/reflector.service.d/network-online.conf <<'EOF'
+[Unit]
+# Wait for real connectivity (DNS included) before refreshing mirrors;
+# retry a few times after resume, then stay quiet until the next timer run.
+Wants=network-online.target
+After=network-online.target nss-lookup.target
+StartLimitIntervalSec=15min
+StartLimitBurst=3
+
+[Service]
+Restart=on-failure
+RestartSec=90
+EOF
+
 # Weekly mirror refresh
 systemctl enable reflector.timer
